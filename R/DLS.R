@@ -86,10 +86,10 @@ import_DLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, t
       df %>%
         dplyr::select(-color) %>%
         purrr::modify_at(.at = vars_parse, readr::parse_number, na = c(">1000", "Out of Range")) %>%
-        map(modify_if, is.double, round, digits = 2) %>%
-        filter(temp_C < temp_cutoff) %>%
-        add_column(mode = as.numeric(NA), .after = "Z_D") %>%
-        mutate(mode = if_else(is.na(mode2_D), 1, if_else(is.na(mode3_D), 2, 3)))
+        purrr::map(purrr::modify_if, is.double, round, digits = 2) %>%
+        dplyr::filter(temp_C < temp_cutoff) %>%
+        tibble::add_column(mode = as.numeric(NA), .after = "Z_D") %>%
+        dplyr::mutate(mode = if_else(is.na(mode2_D), 1, if_else(is.na(mode3_D), 2, 3)))
     }
   )
 
