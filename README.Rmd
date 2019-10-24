@@ -21,7 +21,8 @@ knitr::opts_chunk$set(
 
 `UNcleR` is an R package for parsing data exported from an Unchained Labs *UNcle* instrument for downstream processing of biologics stability data.
 
-* `parse_DLS()` imports DLS data
+* `import_DLSsum()` imports DLS data
+* `import_SLSsum()` imports SLS data
 
 ## Installation
 <!--

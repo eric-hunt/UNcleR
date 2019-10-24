@@ -13,7 +13,8 @@
 Labs *UNcle* instrument for downstream processing of biologics stability
 data.
 
-  - `parse_DLS()` imports DLS data
+  - `import_DLSsum()` imports DLS data
+  - `import_SLSsum()` imports SLS data
 
 ## Installation
 
