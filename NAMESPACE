@@ -2,4 +2,6 @@
 
 export("%>%")
 export(import_DLSsum)
+export(import_SLSsum)
 importFrom(magrittr,"%>%")
+importFrom(tibble,tibble)

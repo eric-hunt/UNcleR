@@ -1,4 +1,4 @@
-#' Import PeakScanner *combined table* .csv files into R
+#' Import UNcle Tm/Tagg DLS summary into R
 #'
 #' \code{import_DLSsum}
 #'
@@ -23,7 +23,7 @@ import_DLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, t
         "color" = grep("color", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "well" = grep("well", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "sample" = grep("sample", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "temp_C" = grep("(?=.*T)(?=.*°C)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "temp_C" = grep("(?=.*T)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "Z_D" = grep("(?=.*Z-Ave)(?=.*Dia)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "Z_diffcoeff" = grep("(?=.*Z-Ave)(?=.*Diff)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "Z_D_SD" = grep("(?=.*SD)(?=.*Dia)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
@@ -73,23 +73,47 @@ import_DLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, t
   )
 
   vars_parse <- c(
-    "temp_C", "Z_D", "Z_diffcoeff", "Z_D_SD", "PdI", "fitVar",
-    "mcr_cps", "peak1_D", "peak1_MW", "peak1_poly", "peak1_mass",
-    "peak1_diffcoeff", "peak2_D", "peak2_MW", "peak2_poly", "peak2_mass",
-    "peak3_D", "peak3_MW", "peak3_poly", "peak3_mass", "viscosity",
-    "RefI", "dcr_cps", "min_pk_area", "min_Rh"
+    "temp_C",
+    "Z_D",
+    "Z_diffcoeff", 
+    "Z_D_SD", "PdI", 
+    "fitVar", 
+    "mcr_cps", 
+    "peak1_D", 
+    "peak1_MW", 
+    "peak1_poly", 
+    "peak1_mass", 
+    "peak1_diffcoeff", 
+    "peak2_D", 
+    "peak2_MW", 
+    "peak2_poly", 
+    "peak2_mass", 
+    "peak3_D", 
+    "peak3_MW",
+    "peak3_poly", 
+    "peak3_mass", 
+    "viscosity", 
+    "RefI", 
+    "dcr_cps", 
+    "min_pk_area", 
+    "min_Rh"
   )
 
-  parsed_list <- purrr::map(
+  parsed_list <- purrr::map2(
     renamed_list,
-    function(df) {
+    names(df_list),
+    function(df, name) {
       df %>%
         dplyr::select(-color) %>%
         purrr::modify_at(.at = vars_parse, readr::parse_number, na = c(">1000", "Out of Range")) %>%
-        purrr::map(purrr::modify_if, is.double, round, digits = 2) %>%
+        purrr::modify_if(is.double, round, digits = 2) %>%
         dplyr::filter(temp_C < temp_cutoff) %>%
         tibble::add_column(mode = as.numeric(NA), .after = "Z_D") %>%
-        dplyr::mutate(mode = if_else(is.na(mode2_D), 1, if_else(is.na(mode3_D), 2, 3)))
+        dplyr::mutate(mode = if_else(is.na(peak2_D), 1, if_else(is.na(peak3_D), 2, 3))) %>% 
+        tibble::add_column(
+          file_name = stringr::str_extract(name, "(?<=//).*(?=\\.xlsx)"),
+          .before = "well"
+        )
     }
   )
 
