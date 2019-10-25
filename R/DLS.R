@@ -6,15 +6,25 @@
 #' @param pattern a regex pattern for further selecing files in the directory,
 #' defaults to reading all .xlsx files present
 #' @param sheet character string to specify sheet if multi-sheet workbook is exported
-#' @param temp_cutoff numeric value, excluding all DLS data obtained at temperatures above this value, defaults to 100°C
+#' @param temp_cutoff numeric value, excluding all DLS data obtained at temperatures above this value, default is 100 (°C)
+#' @param header if TRUE skips first 4 rows of .xlsx file to remove UNcle header, default is FALSE
 #' @return generates a named list of tibbles,
 #' each neamed element is one dataframe named with its origin file path
 #' @export
-import_DLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, temp_cutoff = 100) {
+import_DLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, temp_cutoff = 100, header = FALSE) {
+  if (!(header %in% c(TRUE, FALSE))) {
+    stop("header must be TRUE or FALSE")
+  }
+  skip <- 0
+  if (header) {
+    skip <- 5
+  }
+
+
   file_list <- list.files(directory_path, pattern = pattern, full.names = TRUE) %>%
     purrr::set_names()
 
-  df_list <- purrr::map(file_list, readxl::read_excel, sheet = sheet, col_types = "text")
+  df_list <- purrr::map(file_list, readxl::read_excel, sheet = sheet, col_types = "text", skip = skip)
 
   names_list <- purrr::map(
     df_list,
@@ -75,27 +85,27 @@ import_DLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, t
   vars_parse <- c(
     "temp_C",
     "Z_D",
-    "Z_diffcoeff", 
-    "Z_D_SD", "PdI", 
-    "fitVar", 
-    "mcr_cps", 
-    "peak1_D", 
-    "peak1_MW", 
-    "peak1_poly", 
-    "peak1_mass", 
-    "peak1_diffcoeff", 
-    "peak2_D", 
-    "peak2_MW", 
-    "peak2_poly", 
-    "peak2_mass", 
-    "peak3_D", 
+    "Z_diffcoeff",
+    "Z_D_SD", "PdI",
+    "fitVar",
+    "mcr_cps",
+    "peak1_D",
+    "peak1_MW",
+    "peak1_poly",
+    "peak1_mass",
+    "peak1_diffcoeff",
+    "peak2_D",
+    "peak2_MW",
+    "peak2_poly",
+    "peak2_mass",
+    "peak3_D",
     "peak3_MW",
-    "peak3_poly", 
-    "peak3_mass", 
-    "viscosity", 
-    "RefI", 
-    "dcr_cps", 
-    "min_pk_area", 
+    "peak3_poly",
+    "peak3_mass",
+    "viscosity",
+    "RefI",
+    "dcr_cps",
+    "min_pk_area",
     "min_Rh"
   )
 
@@ -105,11 +115,10 @@ import_DLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, t
     function(df, name) {
       df %>%
         dplyr::select(-color) %>%
-        purrr::modify_at(.at = vars_parse, readr::parse_number, na = c(">1000", "Out of Range")) %>%
+        purrr::modify_at(.at = vars_parse, readr::parse_number, na = c(">1000", "Out of Range", "-", NA)) %>%
         purrr::modify_if(is.double, round, digits = 2) %>%
         dplyr::filter(temp_C < temp_cutoff) %>%
-        tibble::add_column(mode = as.numeric(NA), .after = "Z_D") %>%
-        dplyr::mutate(mode = if_else(is.na(peak2_D), 1, if_else(is.na(peak3_D), 2, 3))) %>% 
+        tibble::add_column(mode_Z = purrr::pmap_dbl(dplyr::select(., tidyselect::matches("peak\\d{1}_D$")), function(...) length(c(...)[!is.na(c(...))])), .after = "Z_D") %>%
         tibble::add_column(
           file_name = stringr::str_extract(name, "(?<=//).*(?=\\.xlsx)"),
           .before = "well"

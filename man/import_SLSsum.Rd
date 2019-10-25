@@ -4,7 +4,8 @@
 \alias{import_SLSsum}
 \title{Import UNcle Tm/Tagg SLS summary into R}
 \usage{
-import_SLSsum(directory_path, pattern = ".*\\\\.xlsx", sheet = NULL)
+import_SLSsum(directory_path, pattern = ".*\\\\.xlsx", sheet = NULL,
+  header = FALSE)
 }
 \arguments{
 \item{directory_path}{a path to a directory containing the exported .xlsx files}
@@ -13,6 +14,8 @@ import_SLSsum(directory_path, pattern = ".*\\\\.xlsx", sheet = NULL)
 defaults to reading all .xlsx files present}
 
 \item{sheet}{character string to specify sheet if multi-sheet workbook is exported}
+
+\item{header}{if TRUE skips first 4 rows of .xlsx file to remove UNcle header, default is FALSE}
 }
 \value{
 generates a named list of tibbles,

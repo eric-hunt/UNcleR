@@ -5,7 +5,7 @@
 \title{Import UNcle Tm/Tagg DLS summary into R}
 \usage{
 import_DLSsum(directory_path, pattern = ".*\\\\.xlsx", sheet = NULL,
-  temp_cutoff = 100)
+  temp_cutoff = 100, header = FALSE)
 }
 \arguments{
 \item{directory_path}{a path to a directory containing the exported .xlsx files}
@@ -15,7 +15,9 @@ defaults to reading all .xlsx files present}
 
 \item{sheet}{character string to specify sheet if multi-sheet workbook is exported}
 
-\item{temp_cutoff}{numeric value, excluding all DLS data obtained at temperatures above this value, defaults to 100°C}
+\item{temp_cutoff}{numeric value, excluding all DLS data obtained at temperatures above this value, default is 100 (°C)}
+
+\item{header}{if TRUE skips first 4 rows of .xlsx file to remove UNcle header, default is FALSE}
 }
 \value{
 generates a named list of tibbles,

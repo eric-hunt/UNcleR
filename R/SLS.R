@@ -6,14 +6,23 @@
 #' @param pattern a regex pattern for further selecing files in the directory,
 #' defaults to reading all .xlsx files present
 #' @param sheet character string to specify sheet if multi-sheet workbook is exported
+#' @param header if TRUE skips first 4 rows of .xlsx file to remove UNcle header, default is FALSE
 #' @return generates a named list of tibbles,
 #' each neamed element is one dataframe named with its origin file path
 #' @export
-import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL) {
+import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, header = FALSE) {
+  if (!(header %in% c(TRUE, FALSE))) {
+    stop("header must be TRUE or FALSE")
+  }
+  skip <- 0
+  if (header) {
+    skip <- 5
+  }
+  
   file_list <- list.files(directory_path, pattern = pattern, full.names = TRUE) %>%
     purrr::set_names()
   
-  df_list <- purrr::map(file_list, readxl::read_excel, sheet = sheet, col_types = "text")
+  df_list <- purrr::map(file_list, readxl::read_excel, sheet = sheet, col_types = "text", skip = skip)
   
   names_list <- purrr::map(
     df_list,
@@ -22,6 +31,7 @@ import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL) {
         "color" = grep("color", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "well" = grep("well", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "sample" = grep("sample", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tonset" = grep("(?=.*Tonset)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "Tm1" = grep("^(?=Tm1)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "Tm2" = grep("^(?=Tm2)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "Tm3" = grep("^(?=Tm3)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
@@ -54,6 +64,7 @@ import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL) {
   )
   
   vars_parse <- c(
+    "Tonset",
     "Tm1",
     "Tm2",
     "Tm3",
@@ -70,10 +81,9 @@ import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL) {
     function(df, name) {
       df %>%
         dplyr::select(-color) %>%
-        purrr::modify_at(.at = vars_parse, readr::parse_number, na = c(">1000", "Out of Range")) %>%
+        purrr::modify_at(.at = vars_parse, readr::parse_number, na = c(">1000", "Out of Range", "-", NA)) %>%
         purrr::modify_if(is.double, round, digits = 2) %>%
-        tibble::add_column(mode = as.numeric(NA), .after = "Tm1") %>%
-        dplyr::mutate(mode = if_else(is.na(Tm2), 1, if_else(is.na(Tm3), 2, 3))) %>% 
+        tibble::add_column(mode_Tm = purrr::pmap_dbl(dplyr::select(., tidyselect::matches("^Tm\\d{1}")), function(...) length(c(...)[!is.na(c(...))])), .after = "Tm1") %>%
         tibble::add_column(
           file_name = stringr::str_extract(name, "(?<=//).*(?=\\.xlsx)"),
           .before = "well"
