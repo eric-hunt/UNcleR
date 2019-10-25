@@ -8,12 +8,16 @@
 #' @param sheet character string to specify sheet if multi-sheet workbook is exported
 #' @param temp_cutoff numeric value, excluding all DLS data obtained at temperatures above this value, default is 100 (°C)
 #' @param header if TRUE skips first 4 rows of .xlsx file to remove UNcle header, default is FALSE
-#' @return generates a named list of tibbles,
-#' each neamed element is one dataframe named with its origin file path
+#' @param combine if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
+#' FALSE will return a list of dataframes; default is TRUE
+#' @return a named (with filename) list of dataframes or a single merged dataframe
 #' @export
-import_DLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, temp_cutoff = 100, header = FALSE) {
+import_DLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, temp_cutoff = 100, header = FALSE, combine = TRUE) {
   if (!(header %in% c(TRUE, FALSE))) {
-    stop("header must be TRUE or FALSE")
+    stop("argument header must be TRUE or FALSE")
+  }
+  if (!(combine %in% c(TRUE, FALSE))) {
+    stop("argument combine must be TRUE or FALSE")
   }
   skip <- 0
   if (header) {
@@ -115,7 +119,7 @@ import_DLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, t
     function(df, name) {
       df %>%
         dplyr::select(-color) %>%
-        purrr::modify_at(.at = vars_parse, readr::parse_number, na = c(">1000", "Out of Range", "-", NA)) %>%
+        purrr::modify_at(.at = vars_parse, readr::parse_number, na = c(">1000", "Out of Range", "-", NA, NaN, "\U221E")) %>%
         purrr::modify_if(is.double, round, digits = 2) %>%
         dplyr::filter(temp_C < temp_cutoff) %>%
         tibble::add_column(mode_Z = purrr::pmap_dbl(dplyr::select(., tidyselect::matches("peak\\d{1}_D$")), function(...) length(c(...)[!is.na(c(...))])), .after = "Z_D") %>%
@@ -126,5 +130,9 @@ import_DLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, t
     }
   )
 
-  return(parsed_list)
+  if (combine == TRUE) {
+    return(dplyr::bind_rows(parsed_list, .id = "origin"))
+  } else {
+    return(parsed_list)
+  }
 }

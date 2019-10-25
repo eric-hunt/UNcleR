@@ -5,21 +5,23 @@
 \title{Import UNcle Tm/Tagg SLS summary into R}
 \usage{
 import_SLSsum(directory_path, pattern = ".*\\\\.xlsx", sheet = NULL,
-  header = FALSE)
+  header = FALSE, combine = TRUE)
 }
 \arguments{
 \item{directory_path}{a path to a directory containing the exported .xlsx files}
 
-\item{pattern}{a regex pattern for further selecing files in the directory,
+\item{pattern}{a regex pattern for further selecing files in the directory;
 defaults to reading all .xlsx files present}
 
 \item{sheet}{character string to specify sheet if multi-sheet workbook is exported}
 
-\item{header}{if TRUE skips first 4 rows of .xlsx file to remove UNcle header, default is FALSE}
+\item{header}{if TRUE skips first 4 rows of .xlsx file to remove UNcle header; default is FALSE}
+
+\item{combine}{if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
+FALSE will return a list of dataframes; default is TRUE}
 }
 \value{
-generates a named list of tibbles,
-each neamed element is one dataframe named with its origin file path
+a named (with filename) list of dataframes or a single merged dataframe
 }
 \description{
 \code{import_SLSsum}

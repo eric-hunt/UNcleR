@@ -15,6 +15,10 @@ data.
 
   - `import_DLSsum()` imports DLS data
   - `import_SLSsum()` imports SLS data
+  - `join_SLS_DLS` joins SLS and DLS data together before metadata
+    assignment
+  - `assign_metadata` assigns metadata to an imported and parsed
+    dataframe
 
 ## Installation
 

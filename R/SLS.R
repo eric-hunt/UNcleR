@@ -3,27 +3,31 @@
 #' \code{import_SLSsum}
 #'
 #' @param directory_path a path to a directory containing the exported .xlsx files
-#' @param pattern a regex pattern for further selecing files in the directory,
+#' @param pattern a regex pattern for further selecing files in the directory;
 #' defaults to reading all .xlsx files present
 #' @param sheet character string to specify sheet if multi-sheet workbook is exported
-#' @param header if TRUE skips first 4 rows of .xlsx file to remove UNcle header, default is FALSE
-#' @return generates a named list of tibbles,
-#' each neamed element is one dataframe named with its origin file path
+#' @param header if TRUE skips first 4 rows of .xlsx file to remove UNcle header; default is FALSE
+#' @param combine if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
+#' FALSE will return a list of dataframes; default is TRUE
+#' @return a named (with filename) list of dataframes or a single merged dataframe
 #' @export
-import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, header = FALSE) {
+import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, header = FALSE, combine = TRUE) {
   if (!(header %in% c(TRUE, FALSE))) {
-    stop("header must be TRUE or FALSE")
+    stop("argument header must be TRUE or FALSE")
+  }
+  if (!(combine %in% c(TRUE, FALSE))) {
+    stop("argument combine must be TRUE or FALSE")
   }
   skip <- 0
   if (header) {
     skip <- 5
   }
-  
+
   file_list <- list.files(directory_path, pattern = pattern, full.names = TRUE) %>%
     purrr::set_names()
-  
+
   df_list <- purrr::map(file_list, readxl::read_excel, sheet = sheet, col_types = "text", skip = skip)
-  
+
   names_list <- purrr::map(
     df_list,
     function(df) {
@@ -36,15 +40,19 @@ import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, h
         "Tm2" = grep("^(?=Tm2)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "Tm3" = grep("^(?=Tm3)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "Tm3_avg" = grep("(?=.*Tm3)(?=.*average)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm4_CV" = grep("(?=.*Tm3)(?=.*cv)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm4_SD" = grep("(?=.*Tm3)(?=.*sd)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm3_CV" = grep("(?=.*Tm3)(?=.*cv)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm3_SD" = grep("(?=.*Tm3)(?=.*sd)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm4" = grep("^(?=Tm4)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm4_avg" = grep("(?=.*Tm4)(?=.*average)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm4_CV" = grep("(?=.*Tm4)(?=.*cv)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm4_SD" = grep("(?=.*Tm4)(?=.*sd)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "Tagg266" = grep("(?=.*Tagg)(?=.*266)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "Tagg473" = grep("(?=.*Tagg)(?=.*473)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE)
       )
       return(recode_values)
     }
   )
-  
+
   recode_values <- purrr::map(
     names_list,
     function(named_vector) {
@@ -53,7 +61,7 @@ import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, h
       return(swaped_vector)
     }
   )
-  
+
   renamed_list <- purrr::map2(
     df_list,
     recode_values,
@@ -62,7 +70,7 @@ import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, h
       return(df)
     }
   )
-  
+
   vars_parse <- c(
     "Tonset",
     "Tm1",
@@ -71,17 +79,21 @@ import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, h
     "Tm3_avg",
     "Tm3_CV",
     "Tm3_SD",
+    "Tm4",
+    "Tm4_avg",
+    "Tm4_CV",
+    "Tm4_SD",
     "Tagg266",
     "Tagg473"
   )
-  
+
   parsed_list <- purrr::map2(
     renamed_list,
     names(df_list),
     function(df, name) {
       df %>%
         dplyr::select(-color) %>%
-        purrr::modify_at(.at = vars_parse, readr::parse_number, na = c(">1000", "Out of Range", "-", NA)) %>%
+        purrr::modify_at(.at = vars_parse, readr::parse_number, na = c(">1000", "Out of Range", "-", NA, NaN, "\U221E")) %>%
         purrr::modify_if(is.double, round, digits = 2) %>%
         tibble::add_column(mode_Tm = purrr::pmap_dbl(dplyr::select(., tidyselect::matches("^Tm\\d{1}")), function(...) length(c(...)[!is.na(c(...))])), .after = "Tm1") %>%
         tibble::add_column(
@@ -91,5 +103,9 @@ import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, h
     }
   )
   
-  return(parsed_list)
+  if (combine == TRUE) {
+    return(dplyr::bind_rows(parsed_list, .id = "origin"))
+  } else {
+    return(parsed_list)
+  }
 }
