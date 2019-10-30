@@ -19,6 +19,8 @@ data.
     assignment
   - `assign_metadata` assigns metadata to an imported and parsed
     dataframe
+  - `import_SLSspec` imports raw SLS spectral data at a specified
+    wavelength
 
 ## Installation
 
