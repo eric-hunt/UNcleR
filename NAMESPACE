@@ -3,6 +3,7 @@
 export("%>%")
 export(assign_metadata)
 export(import_DLSsum)
+export(import_SLSspec)
 export(import_SLSsum)
 export(join_SLS_DLS)
 importFrom(magrittr,"%>%")

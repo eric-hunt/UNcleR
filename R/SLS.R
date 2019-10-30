@@ -102,10 +102,91 @@ import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, h
         )
     }
   )
-  
-  if (combine == TRUE) {
+
+  if (combine) {
     return(dplyr::bind_rows(parsed_list, .id = "origin"))
   } else {
     return(parsed_list)
+  }
+}
+
+
+
+#' Import UNcle Tagg spectra into R
+#'
+#' \code{import_SLSspec}
+#'
+#' @param directory_path a path to a directory containing the exported .xlsx files
+#' @param pattern a regex pattern for further selecing files in the directory;
+#' defaults to reading all .xlsx files present
+#' @param lambda a number value representing wavelength for Tagg spectra, typically 266nm for small aggregates and 473nm for large aggregates;
+#' default is 266nm
+#' @param header if TRUE skips first 1 rows of .xlsx file to remove UNcle header; default is TRUE
+#' @param combine if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
+#' FALSE will return a list of dataframes; default is TRUE
+#' @return a named (with filename) list of dataframes or a single merged dataframe
+#' @export
+import_SLSspec <- function(directory_path, pattern = ".*\\.xlsx", lambda = 266, header = TRUE, combine = TRUE) {
+  if (!(header %in% c(TRUE, FALSE))) {
+    stop("argument header must be TRUE or FALSE")
+  }
+  if (!(combine %in% c(TRUE, FALSE))) {
+    stop("argument combine must be TRUE or FALSE")
+  }
+  skip <- 1
+  if (!(header)) {
+    skip <- 0
+  }
+
+  file_list <- list.files(directory_path, pattern = pattern, full.names = TRUE) %>%
+    purrr::set_names()
+
+  sheet_list <- file_list %>%
+    purrr::map(readxl::excel_sheets) %>%
+    purrr::map(~ .x[.x != "Sheet1"])
+
+  # print(file_list)
+  # print(sheet_list)
+
+  spectra_list <- purrr::map2(
+    file_list,
+    sheet_list,
+    function(files, sheets) {
+      purrr::map_dfr(
+        purrr::set_names(sheets), ~ readxl::read_excel(files, sheet = .x, skip = skip, .name_repair = "unique") %>%
+          .[-c(1:2), ] %>%
+          purrr::modify(readr::parse_number) %>%
+          dplyr::rename(wavelength = ...1) %>%
+          dplyr::filter(abs(lambda - wavelength) == min(abs(lambda - wavelength))) %>%
+          tidyr::nest(data = -tidyselect::one_of("wavelength")),
+        .id = "well"
+      )
+    }
+  ) %>%
+    purrr::map(
+      function(df) {
+        df %>%
+          dplyr::mutate(
+            data = purrr::modify(
+              data, ~ tidyr::pivot_longer(
+                .x, tidyselect::everything(.x),
+                names_to = "temp",
+                names_pattern = "Temp :(.*),.*",
+                names_ptypes = list(temp = numeric()),
+                values_to = "intensity",
+                values_ptypes = list(intensity = numeric())
+              )
+            )
+          )
+      }
+    )
+
+  if (combine) {
+    return(
+      dplyr::bind_rows(spectra_list, .id = "file") %>%
+        dplyr::mutate(file = stringr::str_extract(.$file, stringr::regex("(?<=//).*\\.(xls|xlsx)", ignore_case = TRUE)))
+    )
+  } else {
+    return(spectra_list)
   }
 }
