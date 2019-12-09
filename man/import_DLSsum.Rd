@@ -4,14 +4,20 @@
 \alias{import_DLSsum}
 \title{Import UNcle Tm/Tagg DLS summary into R}
 \usage{
-import_DLSsum(directory_path, pattern = ".*\\\\.xlsx", sheet = NULL,
-  temp_cutoff = 100, header = FALSE, combine = TRUE)
+import_DLSsum(
+  directory_path,
+  pattern = "DLS Sum",
+  sheet = NULL,
+  temp_cutoff = 100,
+  header = FALSE,
+  combine = TRUE
+)
 }
 \arguments{
 \item{directory_path}{a path to a directory containing the exported .xlsx files}
 
 \item{pattern}{a regex pattern for further selecing files in the directory,
-defaults to reading all .xlsx files present}
+defaults to "DLS Sum"}
 
 \item{sheet}{character string to specify sheet if multi-sheet workbook is exported}
 

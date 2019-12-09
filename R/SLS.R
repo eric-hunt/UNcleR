@@ -4,14 +4,14 @@
 #'
 #' @param directory_path a path to a directory containing the exported .xlsx files
 #' @param pattern a regex pattern for further selecing files in the directory;
-#' defaults to reading all .xlsx files present
+#' defaults to "SLS Sum"
 #' @param sheet character string to specify sheet if multi-sheet workbook is exported
 #' @param header if TRUE skips first 4 rows of .xlsx file to remove UNcle header; default is FALSE
 #' @param combine if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
 #' FALSE will return a list of dataframes; default is TRUE
 #' @return a named (with filename) list of dataframes or a single merged dataframe
 #' @export
-import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, header = FALSE, combine = TRUE) {
+import_SLSsum <- function(directory_path, pattern = "SLS Sum", sheet = NULL, header = FALSE, combine = TRUE) {
   if (!(header %in% c(TRUE, FALSE))) {
     stop("argument header must be TRUE or FALSE")
   }
@@ -33,7 +33,7 @@ import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, h
     function(df) {
       recode_values <- c(
         "color" = grep("color", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "well" = grep("well", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "capillary" = grep("well", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "sample" = grep("sample", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "Tonset" = grep("(?=.*Tonset)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "Tm1" = grep("^(?=Tm1)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
@@ -57,7 +57,7 @@ import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, h
     names_list,
     function(named_vector) {
       swaped_vector <- names(named_vector)
-      names(swaped_vector) <- as_vector(named_vector)
+      names(swaped_vector) <- as.vector(named_vector)
       return(swaped_vector)
     }
   )
@@ -98,7 +98,7 @@ import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, h
         tibble::add_column(mode_Tm = purrr::pmap_dbl(dplyr::select(., tidyselect::matches("^Tm\\d{1}")), function(...) length(c(...)[!is.na(c(...))])), .after = "Tm1") %>%
         tibble::add_column(
           file_name = stringr::str_extract(name, "(?<=//).*(?=\\.xlsx)"),
-          .before = "well"
+          .before = "capillary"
         )
     }
   )
@@ -118,7 +118,7 @@ import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, h
 #'
 #' @param directory_path a path to a directory containing the exported .xlsx files
 #' @param pattern a regex pattern for further selecing files in the directory;
-#' defaults to reading all .xlsx files present
+#' defaults to SLS Spec
 #' @param lambda a number value representing wavelength for Tagg spectra, typically 266nm for small aggregates and 473nm for large aggregates;
 #' default is 266nm
 #' @param header if TRUE skips first 1 rows of .xlsx file to remove UNcle header; default is TRUE
@@ -126,7 +126,7 @@ import_SLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, h
 #' FALSE will return a list of dataframes; default is TRUE
 #' @return a named (with filename) list of dataframes or a single merged dataframe
 #' @export
-import_SLSspec <- function(directory_path, pattern = ".*\\.xlsx", lambda = 266, header = TRUE, combine = TRUE) {
+import_SLSspec <- function(directory_path, pattern = "SLS Spec", lambda = 266, header = TRUE, combine = TRUE) {
   if (!(header %in% c(TRUE, FALSE))) {
     stop("argument header must be TRUE or FALSE")
   }
@@ -153,13 +153,13 @@ import_SLSspec <- function(directory_path, pattern = ".*\\.xlsx", lambda = 266, 
     sheet_list,
     function(files, sheets) {
       purrr::map_dfr(
-        purrr::set_names(sheets), ~ readxl::read_excel(files, sheet = .x, skip = skip, .name_repair = "unique") %>%
+        purrr::set_names(sheets), ~ suppressMessages(readxl::read_excel(files, sheet = .x, skip = skip, .name_repair = "unique")) %>%
           .[-c(1:2), ] %>%
           purrr::modify(readr::parse_number) %>%
           dplyr::rename(wavelength = ...1) %>%
           dplyr::filter(abs(lambda - wavelength) == min(abs(lambda - wavelength))) %>%
-          tidyr::nest(data = -tidyselect::one_of("wavelength")),
-        .id = "well"
+          tidyr::nest(specSLS = -tidyselect::one_of("wavelength")),
+        .id = "capillary"
       )
     }
   ) %>%
@@ -170,7 +170,7 @@ import_SLSspec <- function(directory_path, pattern = ".*\\.xlsx", lambda = 266, 
             data = purrr::modify(
               data, ~ tidyr::pivot_longer(
                 .x, tidyselect::everything(.x),
-                names_to = "temp",
+                names_to = "temp_SLS",
                 names_pattern = "Temp :(.*),.*",
                 names_ptypes = list(temp = numeric()),
                 values_to = "intensity",
@@ -184,7 +184,8 @@ import_SLSspec <- function(directory_path, pattern = ".*\\.xlsx", lambda = 266, 
   if (combine) {
     return(
       dplyr::bind_rows(spectra_list, .id = "file") %>%
-        dplyr::mutate(file = stringr::str_extract(.$file, stringr::regex("(?<=//).*\\.(xls|xlsx)", ignore_case = TRUE)))
+        dplyr::mutate(file = stringr::str_extract(.$file, stringr::regex("(?<=//).*\\.(xls|xlsx)", ignore_case = TRUE))) %>% 
+        tidyr::separate(file, c("date", "instrument", "protein", "plate", "file"), sep = "-")
     )
   } else {
     return(spectra_list)

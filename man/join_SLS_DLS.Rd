@@ -4,8 +4,7 @@
 \alias{join_SLS_DLS}
 \title{Joins imported and parsed DLS and Tm/Tagg SLS summary dataframes from the same experiment}
 \usage{
-join_SLS_DLS(SLS_data, DLS_data, .by = c("well", "sample_num",
-  "prot_conc"))
+join_SLS_DLS(SLS_data, DLS_data, .by = c("well", "sample_num", "prot_conc"))
 }
 \arguments{
 \item{SLS_data}{a dataframe object containing SLS data}

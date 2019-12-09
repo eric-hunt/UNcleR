@@ -4,14 +4,19 @@
 \alias{import_SLSspec}
 \title{Import UNcle Tagg spectra into R}
 \usage{
-import_SLSspec(directory_path, pattern = ".*\\\\.xlsx", lambda = 266,
-  header = TRUE, combine = TRUE)
+import_SLSspec(
+  directory_path,
+  pattern = "SLS Spec",
+  lambda = 266,
+  header = TRUE,
+  combine = TRUE
+)
 }
 \arguments{
 \item{directory_path}{a path to a directory containing the exported .xlsx files}
 
 \item{pattern}{a regex pattern for further selecing files in the directory;
-defaults to reading all .xlsx files present}
+defaults to SLS Spec}
 
 \item{lambda}{a number value representing wavelength for Tagg spectra, typically 266nm for small aggregates and 473nm for large aggregates;
 default is 266nm}

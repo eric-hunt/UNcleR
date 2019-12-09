@@ -14,7 +14,11 @@ Labs *UNcle* instrument for downstream processing of biologics stability
 data.
 
   - `import_DLSsum()` imports DLS data
+  - `import_DLSspec()` imports DLS intensity or mass distribution
+    spectra
   - `import_SLSsum()` imports SLS data
+  - `import_SLSspec()` imports SLS spectra
+  - `import_FLUORspec()` imports fluorescence spectra used for Tm calc
   - `join_SLS_DLS` joins SLS and DLS data together before metadata
     assignment
   - `assign_metadata` assigns metadata to an imported and parsed

@@ -4,7 +4,7 @@
 #'
 #' @param directory_path a path to a directory containing the exported .xlsx files
 #' @param pattern a regex pattern for further selecing files in the directory,
-#' defaults to reading all .xlsx files present
+#' defaults to "DLS Sum"
 #' @param sheet character string to specify sheet if multi-sheet workbook is exported
 #' @param temp_cutoff numeric value, excluding all DLS data obtained at temperatures above this value, default is 100 (°C)
 #' @param header if TRUE skips first 4 rows of .xlsx file to remove UNcle header, default is FALSE
@@ -12,7 +12,7 @@
 #' FALSE will return a list of dataframes; default is TRUE
 #' @return a named (with filename) list of dataframes or a single merged dataframe
 #' @export
-import_DLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, temp_cutoff = 100, header = FALSE, combine = TRUE) {
+import_DLSsum <- function(directory_path, pattern = "DLS Sum", sheet = NULL, temp_cutoff = 100, header = FALSE, combine = TRUE) {
   if (!(header %in% c(TRUE, FALSE))) {
     stop("argument header must be TRUE or FALSE")
   }
@@ -24,7 +24,6 @@ import_DLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, t
     skip <- 5
   }
 
-
   file_list <- list.files(directory_path, pattern = pattern, full.names = TRUE) %>%
     purrr::set_names()
 
@@ -35,7 +34,7 @@ import_DLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, t
     function(df) {
       recode_values <- c(
         "color" = grep("color", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "well" = grep("well", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "capillary" = grep("well", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "sample" = grep("sample", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "temp_C" = grep("(?=.*T)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "Z_D" = grep("(?=.*Z-Ave)(?=.*Dia)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
@@ -125,7 +124,7 @@ import_DLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, t
         tibble::add_column(mode_Z = purrr::pmap_dbl(dplyr::select(., tidyselect::matches("peak\\d{1}_D$")), function(...) length(c(...)[!is.na(c(...))])), .after = "Z_D") %>%
         tibble::add_column(
           file_name = stringr::str_extract(name, "(?<=//).*(?=\\.xlsx)"),
-          .before = "well"
+          .before = "capillary"
         )
     }
   )
@@ -134,5 +133,77 @@ import_DLSsum <- function(directory_path, pattern = ".*\\.xlsx", sheet = NULL, t
     return(dplyr::bind_rows(parsed_list, .id = "origin"))
   } else {
     return(parsed_list)
+  }
+}
+
+
+
+
+#' Import UNcle DLS spectra into R
+#'
+#' \code{import_DLSspec}
+#'
+#' @param directory_path a path to a directory containing the exported .xlsx files
+#' @param pattern a regex pattern for further selecing files in the directory;
+#' defaults to NULL to force user input that discriminates intensity from mass DLS files
+#' @param type a character string, "I" or "M", to signify if the data is intensity or mass distribution DLS spectra
+#' @param header if TRUE skips first 3 rows of .xlsx file to remove UNcle header; default is TRUE
+#' @param combine if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
+#' FALSE will return a list of dataframes; default is TRUE
+#' @return a named (with filename) list of dataframes or a single merged dataframe
+#' @export
+import_DLSspec <- function(directory_path, pattern = NULL, type = NA, header = TRUE, combine = TRUE) {
+  if (missing(pattern) | is.null(pattern)) {
+    stop("you must specify a search pattern to select the appropriate DLS files, e.g. 'DLS Spec I' or 'DLS Spec M'")
+  }
+  if (missing(type) | !(type %in% c("I", "M"))) {
+    stop("DLS spectra type is required: 'I' for intensity, 'M' for mass")
+  }
+  if (!(header %in% c(TRUE, FALSE))) {
+    stop("argument header must be TRUE or FALSE")
+  }
+  if (!(combine %in% c(TRUE, FALSE))) {
+    stop("argument combine must be TRUE or FALSE")
+  }
+  skip <- 3
+  if (!(header)) {
+    skip <- 0
+  }
+  
+  nestedColName <- paste0("specDLS_", type)
+  nestedColName <- rlang::sym(nestedColName)
+
+  file_list <- list.files(directory_path, pattern = pattern, full.names = TRUE) %>%
+    purrr::set_names()
+  
+  sheet_list <- file_list %>%
+    purrr::map(readxl::excel_sheets) %>%
+    purrr::map(~ .x[.x != "Sheet1"])
+  
+  # print(file_list)
+  # print(sheet_list)
+  
+  spectra_list <- purrr::map2(
+    file_list,
+    sheet_list,
+    function(files, sheets) {
+      purrr::map_dfr(
+        purrr::set_names(sheets), ~ suppressMessages(readxl::read_excel(files, sheet = .x, skip = skip, .name_repair = "universal")) %>%
+          # purrr::modify(readr::parse_number) %>%
+          dplyr::rename(hydroDia = Hydrodynamic.Diameter..nm., amp = Amplitude) %>%
+          tidyr::nest(!!nestedColName := c(hydroDia, amp)),
+        .id = "capillary"
+      )
+    }
+  )
+  
+  if (combine) {
+    return(
+      dplyr::bind_rows(spectra_list, .id = "file") %>%
+        dplyr::mutate(file = stringr::str_extract(.$file, stringr::regex("(?<=//).*\\.(xls|xlsx)", ignore_case = TRUE))) %>% 
+        tidyr::separate(file, c("date", "instrument", "protein", "plate", "file"), sep = "-")
+    )
+  } else {
+    return(spectra_list)
   }
 }

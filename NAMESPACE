@@ -2,6 +2,7 @@
 
 export("%>%")
 export(assign_metadata)
+export(import_DLSspec)
 export(import_DLSsum)
 export(import_SLSspec)
 export(import_SLSsum)
