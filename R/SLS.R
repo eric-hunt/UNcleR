@@ -104,7 +104,12 @@ import_SLSsum <- function(directory_path, pattern = "SLS Sum", sheet = NULL, hea
   )
 
   if (combine) {
-    return(dplyr::bind_rows(parsed_list, .id = "origin"))
+    return(
+      dplyr::bind_rows(parsed_list, .id = "origin") %>%
+        dplyr::mutate(origin = stringr::str_extract(.$origin, stringr::regex("(?<=//).*\\.(xls|xlsx)", ignore_case = TRUE))) %>%
+        tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-") %>% 
+        select(-file_name)
+    )
   } else {
     return(parsed_list)
   }
@@ -137,6 +142,9 @@ import_SLSspec <- function(directory_path, pattern = "SLS Spec", lambda = 266, h
   if (!(header)) {
     skip <- 0
   }
+  
+  nestedColName <- paste0("specSLS", lambda)
+  nestedColName <- rlang::sym(nestedColName)
 
   file_list <- list.files(directory_path, pattern = pattern, full.names = TRUE) %>%
     purrr::set_names()
@@ -158,7 +166,7 @@ import_SLSspec <- function(directory_path, pattern = "SLS Spec", lambda = 266, h
           purrr::modify(readr::parse_number) %>%
           dplyr::rename(wavelength = ...1) %>%
           dplyr::filter(abs(lambda - wavelength) == min(abs(lambda - wavelength))) %>%
-          tidyr::nest(specSLS = -tidyselect::one_of("wavelength")),
+          tidyr::nest(!!nestedColName := tidyselect::everything()),
         .id = "capillary"
       )
     }
@@ -167,12 +175,12 @@ import_SLSspec <- function(directory_path, pattern = "SLS Spec", lambda = 266, h
       function(df) {
         df %>%
           dplyr::mutate(
-            data = purrr::modify(
-              data, ~ tidyr::pivot_longer(
-                .x, tidyselect::everything(.x),
+            !!nestedColName := purrr::modify(
+              !!nestedColName, ~ tidyr::pivot_longer(
+                .x, -tidyselect::one_of("wavelength"),
                 names_to = "temp_SLS",
                 names_pattern = "Temp :(.*),.*",
-                names_ptypes = list(temp = numeric()),
+                names_ptypes = list(temp_SLS = numeric()),
                 values_to = "intensity",
                 values_ptypes = list(intensity = numeric())
               )
@@ -183,9 +191,9 @@ import_SLSspec <- function(directory_path, pattern = "SLS Spec", lambda = 266, h
 
   if (combine) {
     return(
-      dplyr::bind_rows(spectra_list, .id = "file") %>%
-        dplyr::mutate(file = stringr::str_extract(.$file, stringr::regex("(?<=//).*\\.(xls|xlsx)", ignore_case = TRUE))) %>% 
-        tidyr::separate(file, c("date", "instrument", "protein", "plate", "file"), sep = "-")
+      dplyr::bind_rows(spectra_list, .id = "origin") %>%
+        dplyr::mutate(origin = stringr::str_extract(.$origin, stringr::regex("(?<=//).*\\.(xls|xlsx)", ignore_case = TRUE))) %>%
+        tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-")
     )
   } else {
     return(spectra_list)

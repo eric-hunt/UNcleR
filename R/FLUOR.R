@@ -21,17 +21,17 @@ import_FLUORspec <- function(directory_path, pattern = "Tm Spec", header = TRUE,
   if (!(header)) {
     skip <- 0
   }
-  
+
   file_list <- list.files(directory_path, pattern = pattern, full.names = TRUE) %>%
     purrr::set_names()
-  
+
   sheet_list <- file_list %>%
     purrr::map(readxl::excel_sheets) %>%
     purrr::map(~ .x[.x != "Sheet1"])
-  
+
   # print(file_list)
   # print(sheet_list)
-  
+
   spectra_list <- purrr::map2(
     file_list,
     sheet_list,
@@ -45,12 +45,12 @@ import_FLUORspec <- function(directory_path, pattern = "Tm Spec", header = TRUE,
       )
     }
   )
-  
+
   if (combine) {
     return(
-      dplyr::bind_rows(spectra_list, .id = "file") %>%
-        dplyr::mutate(file = stringr::str_extract(.$file, stringr::regex("(?<=//).*\\.(xls|xlsx)", ignore_case = TRUE))) %>% 
-        tidyr::separate(file, c("date", "instrument", "protein", "plate", "file"), sep = "-")
+      dplyr::bind_rows(spectra_list, .id = "origin") %>%
+        dplyr::mutate(origin = stringr::str_extract(.$origin, stringr::regex("(?<=//).*\\.(xls|xlsx)", ignore_case = TRUE))) %>%
+        tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-")
     )
   } else {
     return(spectra_list)

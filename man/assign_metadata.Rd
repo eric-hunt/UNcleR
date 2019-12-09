@@ -7,6 +7,8 @@
 assign_metadata(data, metaCSV_path, .by = c("well"))
 }
 \arguments{
+\item{data}{a dataframe to assign metadata to}
+
 \item{metaCSV_path}{a path (relative to current working directory) to a .csv file containing metadata variables corresponding to a well (e.g. A1, E4..)}
 
 \item{.by}{a character vector of variable name(s) by which to join metadata;

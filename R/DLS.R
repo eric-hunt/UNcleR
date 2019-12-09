@@ -130,7 +130,12 @@ import_DLSsum <- function(directory_path, pattern = "DLS Sum", sheet = NULL, tem
   )
 
   if (combine == TRUE) {
-    return(dplyr::bind_rows(parsed_list, .id = "origin"))
+    return(
+      dplyr::bind_rows(parsed_list, .id = "origin") %>%
+        dplyr::mutate(origin = stringr::str_extract(.$origin, stringr::regex("(?<=//).*\\.(xls|xlsx)", ignore_case = TRUE))) %>%
+        tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-") %>% 
+        select(-file_name)
+    )
   } else {
     return(parsed_list)
   }
@@ -169,20 +174,20 @@ import_DLSspec <- function(directory_path, pattern = NULL, type = NA, header = T
   if (!(header)) {
     skip <- 0
   }
-  
+
   nestedColName <- paste0("specDLS_", type)
   nestedColName <- rlang::sym(nestedColName)
 
   file_list <- list.files(directory_path, pattern = pattern, full.names = TRUE) %>%
     purrr::set_names()
-  
+
   sheet_list <- file_list %>%
     purrr::map(readxl::excel_sheets) %>%
     purrr::map(~ .x[.x != "Sheet1"])
-  
+
   # print(file_list)
   # print(sheet_list)
-  
+
   spectra_list <- purrr::map2(
     file_list,
     sheet_list,
@@ -196,12 +201,12 @@ import_DLSspec <- function(directory_path, pattern = NULL, type = NA, header = T
       )
     }
   )
-  
+
   if (combine) {
     return(
-      dplyr::bind_rows(spectra_list, .id = "file") %>%
-        dplyr::mutate(file = stringr::str_extract(.$file, stringr::regex("(?<=//).*\\.(xls|xlsx)", ignore_case = TRUE))) %>% 
-        tidyr::separate(file, c("date", "instrument", "protein", "plate", "file"), sep = "-")
+      dplyr::bind_rows(spectra_list, .id = "origin") %>%
+        dplyr::mutate(origin = stringr::str_extract(.$origin, stringr::regex("(?<=//).*\\.(xls|xlsx)", ignore_case = TRUE))) %>%
+        tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-")
     )
   } else {
     return(spectra_list)

@@ -22,6 +22,7 @@ join_SLS_DLS <- function(SLS_data, DLS_data, .by = c("well", "sample_num", "prot
 #'
 #' \code{assign_metadata}
 #'
+#' @param data a dataframe to assign metadata to
 #' @param metaCSV_path a path (relative to current working directory) to a .csv file containing metadata variables corresponding to a well (e.g. A1, E4..)
 #' @param .by a character vector of variable name(s) by which to join metadata;
 #' defaults to c("well")
