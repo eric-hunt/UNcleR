@@ -39,8 +39,21 @@ import_FLUORspec <- function(directory_path, pattern = "Tm Spec", header = TRUE,
       purrr::map_dfr(
         purrr::set_names(sheets), ~ suppressMessages(readxl::read_excel(files, sheet = .x, skip = skip, .name_repair = "universal")) %>%
           # purrr::modify(readr::parse_number) %>%
-          dplyr::rename(temp_FLUOR = Temperature, BCM = BCM...nm) %>%
-          tidyr::nest(specTm = c(temp_FLUOR, BCM)),
+          (function(df) {
+            if (any(names(df) == "Temperature") & any(names(df) == "BCM...nm")) {
+              df_modified <- df %>% 
+                dplyr::select("Temperature", "BCM...nm") %>% 
+                dplyr::rename(temp_x = Temperature, BCM_y = BCM...nm)
+            } else {
+              df_modified <- df %>% 
+                dplyr::select(c(1:2)) %>% 
+                dplyr::rename(temp_x = 1, BCM_y = 2)
+              message("Some variables are missing or non-standard. The first two variables will be used.")
+            }
+            return(df_modified)
+          }) %>% 
+          {suppressMessages(tidyr::nest(., specTm = c(temp_x, BCM_y)))} %>%
+          dplyr::select(specTm),
         .id = "capillary"
       )
     }
@@ -49,7 +62,14 @@ import_FLUORspec <- function(directory_path, pattern = "Tm Spec", header = TRUE,
   if (combine) {
     return(
       dplyr::bind_rows(spectra_list, .id = "origin") %>%
-        dplyr::mutate(origin = stringr::str_extract(.$origin, stringr::regex("(?<=//).*\\.(xls|xlsx)", ignore_case = TRUE))) %>%
+        dplyr::mutate(
+          origin = dplyr::if_else(
+            stringr::str_detect(.$origin, stringr::regex("\\.uni.*$")),
+            stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.uni)", ignore_case = TRUE)),
+            stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.(xls|xlsx))", ignore_case = TRUE))
+          )
+        ) %>%
+        # dplyr::mutate(origin = stringr::str_extract(.$origin, stringr::regex("(?<=//).*\\.(uni|xls|xlsx)", ignore_case = TRUE))) %>%
         tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-")
     )
   } else {

@@ -106,8 +106,14 @@ import_SLSsum <- function(directory_path, pattern = "SLS Sum", sheet = NULL, hea
   if (combine) {
     return(
       dplyr::bind_rows(parsed_list, .id = "origin") %>%
-        dplyr::mutate(origin = stringr::str_extract(.$origin, stringr::regex("(?<=//).*\\.(xls|xlsx)", ignore_case = TRUE))) %>%
-        tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-") %>% 
+        dplyr::mutate(
+          origin = if_else(
+            stringr::str_detect(.$origin, stringr::regex("\\.uni.*$")),
+            stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.uni)", ignore_case = TRUE)),
+            stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.(xls|xlsx))", ignore_case = TRUE))
+          )
+        ) %>%
+        tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-") %>%
         select(-file_name)
     )
   } else {
@@ -142,7 +148,7 @@ import_SLSspec <- function(directory_path, pattern = "SLS Spec", lambda = 266, h
   if (!(header)) {
     skip <- 0
   }
-  
+
   nestedColName <- paste0("specSLS", lambda)
   nestedColName <- rlang::sym(nestedColName)
 
@@ -161,7 +167,8 @@ import_SLSspec <- function(directory_path, pattern = "SLS Spec", lambda = 266, h
     sheet_list,
     function(files, sheets) {
       purrr::map_dfr(
-        purrr::set_names(sheets), ~ suppressMessages(readxl::read_excel(files, sheet = .x, skip = skip, .name_repair = "unique")) %>%
+        purrr::set_names(sheets),
+        ~ suppressMessages(readxl::read_excel(files, sheet = .x, skip = skip, .name_repair = "unique")) %>%
           .[-c(1:2), ] %>%
           purrr::modify(readr::parse_number) %>%
           dplyr::rename(wavelength = ...1) %>%
@@ -178,12 +185,15 @@ import_SLSspec <- function(directory_path, pattern = "SLS Spec", lambda = 266, h
             !!nestedColName := purrr::modify(
               !!nestedColName, ~ tidyr::pivot_longer(
                 .x, -tidyselect::one_of("wavelength"),
-                names_to = "temp_SLS",
+                names_to = "temp_x",
                 names_pattern = "Temp :(.*),.*",
-                names_ptypes = list(temp_SLS = numeric()),
-                values_to = "intensity",
-                values_ptypes = list(intensity = numeric())
-              )
+                names_transform = list(temp_x = as.numeric),
+                # names_ptypes = list(temp_x = numeric()),
+                values_to = "intensity_y",
+                values_transform = list(intensity_y = as.numeric),
+                # values_ptypes = list(intensity_y = numeric())
+              ) %>% 
+                select(temp_x, intensity_y, wavelength)
             )
           )
       }
@@ -192,7 +202,13 @@ import_SLSspec <- function(directory_path, pattern = "SLS Spec", lambda = 266, h
   if (combine) {
     return(
       dplyr::bind_rows(spectra_list, .id = "origin") %>%
-        dplyr::mutate(origin = stringr::str_extract(.$origin, stringr::regex("(?<=//).*\\.(xls|xlsx)", ignore_case = TRUE))) %>%
+        dplyr::mutate(
+          origin = if_else(
+            stringr::str_detect(.$origin, stringr::regex("\\.uni.*$")),
+            stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.uni)", ignore_case = TRUE)),
+            stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.(xls|xlsx))", ignore_case = TRUE))
+          )
+        ) %>%
         tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-")
     )
   } else {

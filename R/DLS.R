@@ -12,7 +12,7 @@
 #' FALSE will return a list of dataframes; default is TRUE
 #' @return a named (with filename) list of dataframes or a single merged dataframe
 #' @export
-import_DLSsum <- function(directory_path, pattern = "DLS Sum", sheet = NULL, temp_cutoff = 100, header = FALSE, combine = TRUE) {
+import_DLSsum <- function(directory_path, pattern = "DLS Sum", sheet = NULL, temp_cutoff = 25, header = FALSE, combine = TRUE) {
   if (!(header %in% c(TRUE, FALSE))) {
     stop("argument header must be TRUE or FALSE")
   }
@@ -132,8 +132,14 @@ import_DLSsum <- function(directory_path, pattern = "DLS Sum", sheet = NULL, tem
   if (combine == TRUE) {
     return(
       dplyr::bind_rows(parsed_list, .id = "origin") %>%
-        dplyr::mutate(origin = stringr::str_extract(.$origin, stringr::regex("(?<=//).*\\.(xls|xlsx)", ignore_case = TRUE))) %>%
-        tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-") %>% 
+        dplyr::mutate(
+          origin = dplyr::if_else(
+            stringr::str_detect(.$origin, stringr::regex("\\.uni.*$")),
+            stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.uni)", ignore_case = TRUE)),
+            stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.(xls|xlsx))", ignore_case = TRUE))
+          )
+        ) %>%
+        tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-") %>%
         select(-file_name)
     )
   } else {
@@ -195,8 +201,22 @@ import_DLSspec <- function(directory_path, pattern = NULL, type = NA, header = T
       purrr::map_dfr(
         purrr::set_names(sheets), ~ suppressMessages(readxl::read_excel(files, sheet = .x, skip = skip, .name_repair = "universal")) %>%
           # purrr::modify(readr::parse_number) %>%
-          dplyr::rename(hydroDia = Hydrodynamic.Diameter..nm., amp = Amplitude) %>%
-          tidyr::nest(!!nestedColName := c(hydroDia, amp)),
+          # function to rename variables and reduce complexity of DLS scans at multiple temperatures
+          (function(df) {
+            if (any(names(df) == "Hydrodynamic.Diameter..nm.") & any(names(df) == "Amplitude")) {
+              df_modified <- df %>% 
+                dplyr::select("Hydrodynamic.Diameter..nm.", "Amplitude") %>% 
+                dplyr::rename(hydroDia_x = Hydrodynamic.Diameter..nm., amp_y = Amplitude)
+            } else {
+              df_modified <- df %>% 
+                dplyr::select(c(1:2)) %>% 
+                dplyr::rename(hydroDia_x = 1, amp_y = 2)
+              message("DLS was performed at multiple temperatures. The first temperature data will be used.")
+            }
+            return(df_modified)
+          }) %>% 
+          {suppressMessages(tidyr::nest(., !!nestedColName := c(hydroDia_x, amp_y)))} %>%
+          dplyr::select(!!nestedColName),
         .id = "capillary"
       )
     }
@@ -205,7 +225,13 @@ import_DLSspec <- function(directory_path, pattern = NULL, type = NA, header = T
   if (combine) {
     return(
       dplyr::bind_rows(spectra_list, .id = "origin") %>%
-        dplyr::mutate(origin = stringr::str_extract(.$origin, stringr::regex("(?<=//).*\\.(xls|xlsx)", ignore_case = TRUE))) %>%
+        dplyr::mutate(
+          origin = dplyr::if_else(
+            stringr::str_detect(.$origin, stringr::regex("\\.uni.*$")),
+            stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.uni)", ignore_case = TRUE)),
+            stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.(xls|xlsx))", ignore_case = TRUE))
+          )
+        ) %>%
         tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-")
     )
   } else {
