@@ -157,7 +157,7 @@ import_DLSsum <- function(directory_path, pattern = "DLS Sum", sheet = NULL, tem
 #' @param directory_path a path to a directory containing the exported .xlsx files
 #' @param pattern a regex pattern for further selecing files in the directory;
 #' defaults to NULL to force user input that discriminates intensity from mass DLS files
-#' @param type a character string, "I" or "M", to signify if the data is intensity or mass distribution DLS spectra
+#' @param type a character string, "C", "I", or "M", to signify if the data is correlation function, intensity, or mass distribution DLS spectra
 #' @param header if TRUE skips first 3 rows of .xlsx file to remove UNcle header; default is TRUE
 #' @param combine if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
 #' FALSE will return a list of dataframes; default is TRUE
@@ -167,8 +167,8 @@ import_DLSspec <- function(directory_path, pattern = NULL, type = NA, header = T
   if (missing(pattern) | is.null(pattern)) {
     stop("you must specify a search pattern to select the appropriate DLS files, e.g. 'DLS Spec I' or 'DLS Spec M'")
   }
-  if (missing(type) | !(type %in% c("I", "M"))) {
-    stop("DLS spectra type is required: 'I' for intensity, 'M' for mass")
+  if (missing(type) | !(type %in% c("C", "I", "M"))) {
+    stop("DLS spectra type is required: 'C' for correlation, 'I' for intensity, 'M' for mass")
   }
   if (!(header %in% c(TRUE, FALSE))) {
     stop("argument header must be TRUE or FALSE")
@@ -180,6 +180,8 @@ import_DLSspec <- function(directory_path, pattern = NULL, type = NA, header = T
   if (!(header)) {
     skip <- 0
   }
+  
+  # planning to remove is.null from pattern if statement and defaulting a patter based on specified type; pattern remains an argument to select one file only
 
   nestedColName <- paste0("specDLS_", type)
   nestedColName <- rlang::sym(nestedColName)
@@ -203,19 +205,27 @@ import_DLSspec <- function(directory_path, pattern = NULL, type = NA, header = T
           # purrr::modify(readr::parse_number) %>%
           # function to rename variables and reduce complexity of DLS scans at multiple temperatures
           (function(df) {
-            if (any(names(df) == "Hydrodynamic.Diameter..nm.") & any(names(df) == "Amplitude")) {
+            xval <- grep(pattern = "Hydrodynamic.Diameter..nm.|Time..s.", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE)
+            yval <- grep(pattern = "Amp", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE)
+            xnew <- "x"
+            if (grepl(pattern = "Hydro", names(df), ignore.case = TRUE, perl = TRUE)) {xnew <- "hydroDia_x"}
+            if (grepl(pattern = "Time", names(df), ignore.case = TRUE, perl = TRUE)) {xnew <- "timeSec_x"}
+            xsym <- rlang::sym(xnew)
+            if ((any(names(df) == "Hydrodynamic.Diameter..nm.") | any(names(df) == "Time..s.")) & any(names(df) == "Amplitude")) {
               df_modified <- df %>% 
-                dplyr::select("Hydrodynamic.Diameter..nm.", "Amplitude") %>% 
-                dplyr::rename(hydroDia_x = Hydrodynamic.Diameter..nm., amp_y = Amplitude)
+                dplyr::select(c(xval, yval)) %>% 
+                dplyr::rename(!!xsym := xval, amp_y = Amplitude)
             } else {
               df_modified <- df %>% 
                 dplyr::select(c(1:2)) %>% 
-                dplyr::rename(hydroDia_x = 1, amp_y = 2)
+                dplyr::rename(!!xsym := 1, amp_y = 2)
               message("DLS was performed at multiple temperatures. The first temperature data will be used.")
             }
-            return(df_modified)
+            output <- df_modified %>% 
+              {suppressMessages(tidyr::nest(., !!nestedColName := c(!!xsym, amp_y)))}
+            
+            return(output)
           }) %>% 
-          {suppressMessages(tidyr::nest(., !!nestedColName := c(hydroDia_x, amp_y)))} %>%
           dplyr::select(!!nestedColName),
         .id = "capillary"
       )

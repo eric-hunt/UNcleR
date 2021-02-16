@@ -28,5 +28,6 @@ rsconnect/
 # MacOS files
 *.DS_Store
 .DS_Store
+man/.DS_Store
 # Design files
 *.afdesign
