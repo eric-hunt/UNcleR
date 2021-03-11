@@ -4,7 +4,6 @@
 # UNcleR <img src='man/figures/logo.png' align="right" height="139" />
 
 <!-- badges: start -->
-
 <!-- badges: end -->
 
 ## Overview
@@ -13,18 +12,17 @@
 Labs *UNcle* instrument for downstream processing of biologics stability
 data.
 
-  - `import_DLSsum()` imports DLS data
-  - `import_DLSspec()` imports DLS intensity or mass distribution
+-   `import_DLSsum()` imports DLS summary data
+-   `import_DLSspec()` imports DLS intensity or mass distribution
     spectra
-  - `import_SLSsum()` imports SLS data
-  - `import_SLSspec()` imports SLS spectra
-  - `import_FLUORspec()` imports fluorescence spectra used for Tm calc
-  - `join_SLS_DLS` joins SLS and DLS data together before metadata
-    assignment
-  - `assign_metadata` assigns metadata to an imported and parsed
-    dataframe
-  - `import_SLSspec` imports raw SLS spectral data at a specified
+-   `import_SLSsum()` imports SLS and thermal ramp summary data
+-   `import_SLSspec` imports raw SLS spectral data at a specified
     wavelength
+-   `import_FLUORspec()` imports fluorescence spectra used for Tm calc
+-   `join_SLS_DLS` joins SLS and DLS data together before metadata
+    assignment
+-   `assign_metadata` assigns metadata to an imported and parsed
+    dataframe
 
 ## Installation
 
