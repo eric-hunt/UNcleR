@@ -21,9 +21,9 @@ data.
 -   `import_FLUORspec()` imports fluorescence spectra used for Tm calc
 -   `join_SLS_DLS` joins SLS and DLS data together before metadata
     assignment
--   `get_metadata` imports metadata from an Excel document into a list
-    of dataframes
--   `add_metadata` assigns metadata to an imported and parsed dataframe
+-   `get_meta` imports metadata from an Excel document into a list of
+    dataframes
+-   `add_meta` assigns metadata to an imported and parsed dataframe
 
 ## Installation
 
