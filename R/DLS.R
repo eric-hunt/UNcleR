@@ -71,7 +71,7 @@ import_DLSsum <- function(directory_path, pattern = "DLS Sum", sheet = NULL, tem
     names_list,
     function(named_vector) {
       swaped_vector <- names(named_vector)
-      names(swaped_vector) <- as_vector(named_vector)
+      names(swaped_vector) <- purrr::as_vector(named_vector)
       return(swaped_vector)
     }
   )
@@ -140,7 +140,7 @@ import_DLSsum <- function(directory_path, pattern = "DLS Sum", sheet = NULL, tem
           )
         ) %>%
         tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-") %>%
-        select(-file_name)
+        dplyr::select(-file_name)
     )
   } else {
     return(parsed_list)

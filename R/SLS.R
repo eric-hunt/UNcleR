@@ -36,18 +36,18 @@ import_SLSsum <- function(directory_path, pattern = "SLS Sum", sheet = NULL, hea
         "uni" = grep("well", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "sample" = grep("sample", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "Tonset" = grep("(?=.*Tonset)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm1" = grep("^Tm1(?=.*\U00B0)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm2" = grep("^Tm2(?=.*\U00B0)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm3" = grep("^Tm3(?=.*\U00B0)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm3_avg" = grep("^(?=average)(?=.*Tm3)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm3_CV" = grep("^(?=.*cv)(?=.*Tm3)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm3_SD" = grep("^(?=sd)(?=.*Tm3)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm4" = grep("^Tm4(?=.*\U00B0)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm4_avg" = grep("^(?=average)(?=.*Tm4)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm4_CV" = grep("^(?=.*cv)(?=.*Tm4)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm4_SD" = grep("^(?=sd)(?=.*Tm4)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tagg266" = grep("^Tagg(?=.*266)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tagg473" = grep("^Tagg(?=.*473)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE)
+        "Tm1" = grep("^Tm1(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm2" = grep("^Tm2(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm3" = grep("^Tm3(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm3_avg" = grep("^(?=average)(?=.*Tm3)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm3_CV" = grep("^(?=.*cv)(?=.*Tm3)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm3_SD" = grep("^(?=sd)(?=.*Tm3)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm4" = grep("^Tm4(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm4_avg" = grep("^(?=average)(?=.*Tm4)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm4_CV" = grep("^(?=.*cv)(?=.*Tm4)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm4_SD" = grep("^(?=sd)(?=.*Tm4)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tagg266" = grep("^Tagg(?=.*266)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tagg473" = grep("^Tagg(?=.*473)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE)
       )
       return(recode_values)
     }
@@ -107,14 +107,14 @@ import_SLSsum <- function(directory_path, pattern = "SLS Sum", sheet = NULL, hea
     return(
       dplyr::bind_rows(parsed_list, .id = "origin") %>%
         dplyr::mutate(
-          origin = if_else(
+          origin = dplyr::if_else(
             stringr::str_detect(.$origin, stringr::regex("\\.uni.*$")),
             stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.uni)", ignore_case = TRUE)),
             stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.(xls|xlsx))", ignore_case = TRUE))
           )
         ) %>%
         tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-") %>%
-        select(-file_name)
+        dplyr::select(-file_name)
     )
   } else {
     return(parsed_list)
@@ -193,7 +193,7 @@ import_SLSspec <- function(directory_path, pattern = "SLS Spec", lambda = 266, h
                 values_transform = list(intensity_y = as.numeric),
                 # values_ptypes = list(intensity_y = numeric())
               ) %>% 
-                select(temp_x, intensity_y, wavelength)
+                dplyr::select(temp_x, intensity_y, wavelength)
             )
           )
       }
@@ -203,7 +203,7 @@ import_SLSspec <- function(directory_path, pattern = "SLS Spec", lambda = 266, h
     return(
       dplyr::bind_rows(spectra_list, .id = "origin") %>%
         dplyr::mutate(
-          origin = if_else(
+          origin = dplyr::if_else(
             stringr::str_detect(.$origin, stringr::regex("\\.uni.*$")),
             stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.uni)", ignore_case = TRUE)),
             stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.(xls|xlsx))", ignore_case = TRUE))

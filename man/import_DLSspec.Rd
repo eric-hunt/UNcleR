@@ -18,7 +18,7 @@ import_DLSspec(
 \item{pattern}{a regex pattern for further selecing files in the directory;
 defaults to NULL to force user input that discriminates intensity from mass DLS files}
 
-\item{type}{a character string, "I" or "M", to signify if the data is intensity or mass distribution DLS spectra}
+\item{type}{a character string, "C", "I", or "M", to signify if the data is correlation function, intensity, or mass distribution DLS spectra}
 
 \item{header}{if TRUE skips first 3 rows of .xlsx file to remove UNcle header; default is TRUE}
 

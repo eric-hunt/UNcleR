@@ -18,21 +18,37 @@ join_SLS_DLS <- function(SLS_data, DLS_data, .by = c("well", "sample_num", "prot
 
 
 
-#' Assign user-defined metadata to imported DLS or Tm/Tagg SLS summary dataframe
+#' Get metadata from unified Excel document
 #'
-#' \code{assign_metadata}
+#' \code{get_meta}
+#'
+#' @param path a character string path to an Excel document containing metadata for each experiment in separate worksheets
+#' defaults to c("well")
+#' @return a named list of tibbles containing metadata for experiments
+#' @export
+get_meta <- function(path) {
+  sheets <- readxl::excel_sheets(path) %>% 
+    purrr::set_names()
+  sheets <- sheets[-grepl("Variables", sheets)]
+  
+  meta <- purrr::map(sheets, ~ readxl::read_excel(path, sheet = .x))
+  
+  return(meta)
+}
+
+
+
+#' Join user-defined metadata from `UNcleR::get_meta` function to imported Uncle data
+#'
+#' \code{add_meta}
 #'
 #' @param data a dataframe to assign metadata to
-#' @param metaCSV_path a path (relative to current working directory) to a .csv file containing metadata variables corresponding to a well (e.g. A1, E4..)
-#' @param .by a character vector of variable name(s) by which to join metadata;
+#' @param meta a named list of tibbles containing metadata for experiments imported from `UNcleR::get_meta` function
 #' defaults to c("well")
 #' @return a dataframe with metadata added as new variables, matched according to well
 #' @export
-assign_metadata <- function(data, metaCSV_path, .by = c("well")) {
-  metadata <- readr::read_csv(metaCSV_path)
-  right_join(
-    x = metadata,
-    y = data,
-    by = c("well")
-  )
+add_meta <- function(data, meta) {
+  wellOrder <- purrr::map2_chr(rep(c(LETTERS[1:8]), 12), purrr::flatten_chr(purrr::map(c(1:12), rep, 8)), paste0)
+  dplyr::left_join(meta[[unique(stringr::str_sub(data$plate, end = -2))]], data, by = c("plate", "uni")) %>% 
+    dplyr::arrange(match(well, wellOrder))
 }

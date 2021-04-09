@@ -8,7 +8,7 @@ import_DLSsum(
   directory_path,
   pattern = "DLS Sum",
   sheet = NULL,
-  temp_cutoff = 100,
+  temp_cutoff = 25,
   header = FALSE,
   combine = TRUE
 )
