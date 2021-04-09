@@ -34,7 +34,7 @@ import_DLSsum <- function(directory_path, pattern = "DLS Sum", sheet = NULL, tem
     function(df) {
       recode_values <- c(
         "color" = grep("color", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "capillary" = grep("well", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "uni" = grep("well", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "sample" = grep("sample", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "temp_C" = grep("(?=.*T)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "Z_D" = grep("(?=.*Z-Ave)(?=.*Dia)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
@@ -124,7 +124,7 @@ import_DLSsum <- function(directory_path, pattern = "DLS Sum", sheet = NULL, tem
         tibble::add_column(mode_Z = purrr::pmap_dbl(dplyr::select(., tidyselect::matches("peak\\d{1}_D$")), function(...) length(c(...)[!is.na(c(...))])), .after = "Z_D") %>%
         tibble::add_column(
           file_name = stringr::str_extract(name, "(?<=//).*(?=\\.xlsx)"),
-          .before = "capillary"
+          .before = "uni"
         )
     }
   )
@@ -227,7 +227,7 @@ import_DLSspec <- function(directory_path, pattern = NULL, type = NA, header = T
             return(output)
           }) %>% 
           dplyr::select(!!nestedColName),
-        .id = "capillary"
+        .id = "uni"
       )
     }
   )

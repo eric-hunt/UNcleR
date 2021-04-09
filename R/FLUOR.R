@@ -54,7 +54,7 @@ import_FLUORspec <- function(directory_path, pattern = "Tm Spec", header = TRUE,
           }) %>% 
           {suppressMessages(tidyr::nest(., specTm = c(temp_x, BCM_y)))} %>%
           dplyr::select(specTm),
-        .id = "capillary"
+        .id = "uni"
       )
     }
   )

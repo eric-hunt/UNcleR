@@ -33,21 +33,21 @@ import_SLSsum <- function(directory_path, pattern = "SLS Sum", sheet = NULL, hea
     function(df) {
       recode_values <- c(
         "color" = grep("color", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "capillary" = grep("well", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "uni" = grep("well", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "sample" = grep("sample", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
         "Tonset" = grep("(?=.*Tonset)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm1" = grep("^(?=Tm1)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm2" = grep("^(?=Tm2)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm3" = grep("^(?=Tm3)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm3_avg" = grep("(?=.*Tm3)(?=.*average)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm3_CV" = grep("(?=.*Tm3)(?=.*cv)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm3_SD" = grep("(?=.*Tm3)(?=.*sd)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm4" = grep("^(?=Tm4)(?=.*\U00B0)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm4_avg" = grep("(?=.*Tm4)(?=.*average)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm4_CV" = grep("(?=.*Tm4)(?=.*cv)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tm4_SD" = grep("(?=.*Tm4)(?=.*sd)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tagg266" = grep("(?=.*Tagg)(?=.*266)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE),
-        "Tagg473" = grep("(?=.*Tagg)(?=.*473)", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE)
+        "Tm1" = grep("^Tm1(?=.*\U00B0)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm2" = grep("^Tm2(?=.*\U00B0)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm3" = grep("^Tm3(?=.*\U00B0)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm3_avg" = grep("^(?=average)(?=.*Tm3)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm3_CV" = grep("^(?=.*cv)(?=.*Tm3)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm3_SD" = grep("^(?=sd)(?=.*Tm3)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm4" = grep("^Tm4(?=.*\U00B0)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm4_avg" = grep("^(?=average)(?=.*Tm4)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm4_CV" = grep("^(?=.*cv)(?=.*Tm4)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tm4_SD" = grep("^(?=sd)(?=.*Tm4)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tagg266" = grep("^Tagg(?=.*266)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE),
+        "Tagg473" = grep("^Tagg(?=.*473)", names(testdf), ignore.case = TRUE, perl = TRUE, value = TRUE)
       )
       return(recode_values)
     }
@@ -98,7 +98,7 @@ import_SLSsum <- function(directory_path, pattern = "SLS Sum", sheet = NULL, hea
         tibble::add_column(mode_Tm = purrr::pmap_dbl(dplyr::select(., tidyselect::matches("^Tm\\d{1}")), function(...) length(c(...)[!is.na(c(...))])), .after = "Tm1") %>%
         tibble::add_column(
           file_name = stringr::str_extract(name, "(?<=//).*(?=\\.xlsx)"),
-          .before = "capillary"
+          .before = "uni"
         )
     }
   )
@@ -174,7 +174,7 @@ import_SLSspec <- function(directory_path, pattern = "SLS Spec", lambda = 266, h
           dplyr::rename(wavelength = ...1) %>%
           dplyr::filter(abs(lambda - wavelength) == min(abs(lambda - wavelength))) %>%
           tidyr::nest(!!nestedColName := tidyselect::everything()),
-        .id = "capillary"
+        .id = "uni"
       )
     }
   ) %>%
