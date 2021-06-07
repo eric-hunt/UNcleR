@@ -1,0 +1,94 @@
+---
+title: "UNcleR Experiment Consolidation Sandbox"
+output: github_document
+knit: (function(input_file, ...) {
+    rmarkdown::render(
+      input=input_file,
+      encoding="UTF-8",
+      output_file = 'README.md'
+    )
+  })
+---
+
+```{r setup, include=FALSE}
+# set chunk defaults for suppressing console message and displaying code by default
+knitr::opts_chunk$set(
+  message = FALSE,
+  # warning = FALSE,
+  echo = TRUE,
+  include = TRUE
+)
+# set working directory for chunks and show progress bar for knitr actions
+knitr::opts_knit$set(
+  root.dir = "~/GitHub/UNcleR/",
+  progress = TRUE
+)
+
+
+## data loading and manipulation
+# library(feather)
+library(tidyverse)
+# library(magrittr) # for the Tee pipe
+library(readxl)
+
+## statistics
+# library(rstatix)
+
+## plotting
+library(cowplot)
+# library(ggrepel)
+# library(ggridges)
+# library(gganimate)
+# library(lemon)
+library(RColorBrewer)
+library(xkcdcolors)
+library(extrafont)
+
+## programming
+library(glue)
+library(rlang)
+
+## interactivity
+# library(crosstalk)
+# library(plotly)
+
+# user packages
+# library(fragr)
+library(UNcleR)
+# library(RTtools)
+
+# default style for ggplot
+theme_set(
+  theme_bw(base_family = "Roboto Condensed") +
+    theme(
+      axis.text = element_text(face = "bold"),
+      panel.grid = element_blank()
+    )
+)
+
+
+# useful variables
+wellOrder <- purrr::map2_chr(rep(c(LETTERS[1:8]), 12), purrr::flatten_chr(purrr::map(c(1:12), rep, 8)), paste0)
+uniOrder <- purrr::map2_chr(rep(c(LETTERS[1:16]), 3), purrr::flatten_chr(purrr::map(c(1:3), rep, 16)), paste0)
+```
+
+
+## Consolidating Experimental Data
+
+A function should be developed to serve as a single tool for consolidating all experimental data based on directory hierarchy. Currently, single-use or anonymous functions are written to import Uncle data and package it for the dashboard.
+
+```{r}
+
+```
+
+<!-- #' Consolidates experiments for a protein based on directory hierarchy -->
+<!-- #'  -->
+<!-- #' \code{consolidate_experiments} -->
+<!-- #'  -->
+<!-- #' @param directory a directory path named after the protein (e.g. ~/Protein_A will be "Protein_A") -->
+<!-- #'  -->
+<!-- #' @return  -->
+<!-- #' @export -->
+<!-- consolidate_experiments <- function() { -->
+
+<!-- } -->
