@@ -31,3 +31,6 @@ rsconnect/
 man/.DS_Store
 # Design files
 *.afdesign
+# Local links
+ln
+ln/*
