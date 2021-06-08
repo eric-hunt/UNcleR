@@ -76,6 +76,17 @@ uniOrder <- purrr::map2_chr(rep(c(LETTERS[1:16]), 3), purrr::flatten_chr(purrr::
 ## Parsing Bundled Export Spectra Files
 
 ```{r}
+SLSpath <- "testing/Seq_Cas9/Exports/pH Screen/bundled_spectra/210602-01-Seq1 Cas9-pH003R-SLS Bundle.uni-2021-06-03T09-36-29.xlsx"
 
+SLSbundle_sheets <- readxl::excel_sheets(SLSpath) |> {\(x) x[match(x[x != "Sheet1"], uniOrder)]}() |> purrr::set_names()
+# SLSbundle_sheets
+
+SLSbundle <- purrr::map_dfr(SLSbundle_sheets, readxl::read_xlsx, path = SLSpath, skip = 3, .id = "uni") |> 
+  tidyr::nest(FLUORspec = c(2:3), SLSspec266 = c(4:5), SLSspec473 = c(6:7)) |> 
+  mutate(across(contains("spec"),
+           \(lcol) purrr::map(lcol, \(df) rename_with(df, .cols = 1, .fn = ~ "temp_C"))
+           )
+         )
+SLSbundle
 ```
 
