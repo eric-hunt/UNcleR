@@ -11,8 +11,8 @@
 #' @return a named (with filename) list of dataframes or a single merged dataframe
 #' @export
 import_staticBundle <- function(directory_path, pattern = "SLS Bundle", skip = 3, combine = TRUE) {
-  if (!(header %in% c(TRUE, FALSE))) {
-    stop("argument header must be TRUE or FALSE")
+  if (!(is.numeric(skip))) {
+    stop("argument skip must be numeric")
   }
   if (!(combine %in% c(TRUE, FALSE))) {
     stop("argument combine must be TRUE or FALSE")
@@ -33,7 +33,7 @@ import_staticBundle <- function(directory_path, pattern = "SLS Bundle", skip = 3
     )
   }()
 
-  message(paste0("Importing ", length(file_list), " files:"))
+  message(paste0("Parsing ", length(file_list), " files:"))
   print(file_list)
 
   import_file <- function(path) {
@@ -41,7 +41,7 @@ import_staticBundle <- function(directory_path, pattern = "SLS Bundle", skip = 3
       \(s) s[match(s[s != "Sheet1"], uniOrder)]
     }() |> rlang::set_names()
 
-    bundle <- suppressMessages(purrr::map_dfr(sheets,
+    table <- suppressMessages(purrr::map_dfr(sheets,
       readxl::read_xlsx,
       path = path,
       skip = skip,
@@ -55,7 +55,7 @@ import_staticBundle <- function(directory_path, pattern = "SLS Bundle", skip = 3
       \(lcol) purrr::map(lcol, \(df) dplyr::rename_with(df, .cols = 1, .fn = ~"temp_C"))
     ))
 
-    return(bundle)
+    return(table)
   }
 
   spectra_tables <- purrr::map(file_list, import_file) |> {
@@ -89,5 +89,89 @@ import_staticBundle <- function(directory_path, pattern = "SLS Bundle", skip = 3
 #' @return a named (with filename) list of dataframes or a single merged dataframe
 #' @export
 import_dynamicBundle <- function(directory_path, pattern = "DLS Bundle", skip = 2, combine = TRUE) {
-  
+  if (!(is.numeric(skip))) {
+    stop("argument skip must be numeric")
+  }
+  if (!(combine %in% c(TRUE, FALSE))) {
+    stop("argument combine must be TRUE or FALSE")
+  }
+
+  file_list <- list.files(directory_path, pattern = pattern, full.names = TRUE) |> {
+    \(l) rlang::set_names(l,
+      nm = purrr::map_chr(
+        l,
+        stringr::str_extract, "(?<=//).*(?=\\.(xls|xlsx))"
+      )
+    )
+  }()
+
+  message(paste0("Parsing ", length(file_list), " files:"))
+  print(file_list)
+
+  import_file <- function(path) {
+    sheets <- readxl::excel_sheets(path) |> {
+      \(s) s[s != "Sheet1"]
+    }() |> rlang::set_names()
+
+    bundle <- suppressMessages(purrr::map(
+      sheets,
+      \(sheet) readxl::read_xlsx(
+        path = path,
+        sheet = sheet,
+        skip = 2,
+        col_types = "numeric",
+        .name_repair = "universal"
+      )
+    ))
+
+    table <- reduce( # iterate through the dfs two at a time..
+      list(
+        # correlation
+        bundle[grepl("Correlation", names(bundle))] |> {
+          \(b) rlang::set_names(b,
+            nm = stringr::str_extract(names(b), "(?<=\\-)[A-P]\\d+\\-\\d+$")
+          )
+        }() |>
+        dplyr::bind_rows(.id = "uni") |>
+        tidyr::nest(specDLS_c = c(2:3)),
+        # intensity
+        bundle[grepl("Intensity", names(bundle))] |> {
+          \(b) rlang::set_names(b,
+            nm = stringr::str_extract(names(b), "(?<=\\-)[A-P]\\d+\\-\\d+$")
+          )
+        }() |>
+        dplyr::bind_rows(.id = "uni") |>
+        tidyr::nest(specDLS_i = c(2:3)),
+        # mass
+        bundle[grepl("Mass", names(bundle))] |> {
+          \(b) rlang::set_names(b,
+            nm = stringr::str_extract(names(b), "(?<=\\-)[A-P]\\d+\\-\\d+$")
+          )
+        }() |>
+        dplyr::bind_rows(.id = "uni") |>
+        tidyr::nest(specDLS_m = c(2:3))
+      ),
+      # ..using join function
+      dplyr::left_join,
+      by = "uni"
+    )
+
+    return(table)
+  }
+
+  spectra_tables <- purrr::map(file_list, import_file) |> {
+    \(l) rlang::set_names(l,
+      nm = purrr::map_chr(
+        file_list,
+        stringr::str_extract, "(?<=//).*(?=\\.(xls|xlsx))"
+      )
+    )
+  }()
+
+  if (combine) {
+    return(dplyr::bind_rows(spectra_tables, .id = "origin") |>
+    tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-"))
+  } else {
+    return(spectra_tables)
+  }
 }
