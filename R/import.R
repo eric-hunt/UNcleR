@@ -5,21 +5,17 @@
 #' @param directory_path a path to a directory containing the exported .xlsx files
 #' @param pattern a regex for narrowing selection of files in the `directory_path`;
 #' defaults to "SLS Bundle"
-#' @param header if TRUE skips first 3 rows of the .xlsx file to remove embedded run metadata; default is TRUE
+#' @param skip number of rows of embedded run metadata in the .xlsx file to remove; default is 3
 #' @param combine if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
 #' FALSE will return a list of dataframes; default is TRUE
 #' @return a named (with filename) list of dataframes or a single merged dataframe
 #' @export
-import_staticBundle <- function(directory_path, pattern = "SLS Bundle", header = TRUE, combine = TRUE) {
+import_staticBundle <- function(directory_path, pattern = "SLS Bundle", skip = 3, combine = TRUE) {
   if (!(header %in% c(TRUE, FALSE))) {
     stop("argument header must be TRUE or FALSE")
   }
   if (!(combine %in% c(TRUE, FALSE))) {
     stop("argument combine must be TRUE or FALSE")
-  }
-  skip <- 3
-  if (!(header)) {
-    skip <- 0
   }
 
   uniOrder <- purrr::map2_chr(
@@ -77,4 +73,21 @@ import_staticBundle <- function(directory_path, pattern = "SLS Bundle", header =
   } else {
     return(spectra_tables)
   }
+}
+
+
+#' Import dynamic UNcle spectra (DLS) into R
+#'
+#' \code{import_dynamicBundle}
+#'
+#' @param directory_path a path to a directory containing the exported .xlsx files
+#' @param pattern a regex for narrowing selection of files in the `directory_path`;
+#' defaults to "DLS Bundle"
+#' @param skip number of rows of embedded run metadata in the .xlsx file to remove; default is 2
+#' @param combine if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
+#' FALSE will return a list of dataframes; default is TRUE
+#' @return a named (with filename) list of dataframes or a single merged dataframe
+#' @export
+import_dynamicBundle <- function(directory_path, pattern = "DLS Bundle", skip = 2, combine = TRUE) {
+  
 }
