@@ -76,8 +76,10 @@ uniOrder <- purrr::map2_chr(rep(c(LETTERS[1:16]), 3), purrr::flatten_chr(purrr::
 
 ## Parsing Bundled Export Spectra Files
 
+### Static Method Spectra
+
 ```{r, message=FALSE}
-SLSpath <- "data/local/T4 RNA Ligase/General Screen/210607-01-T4 RNA Ligase-Gen006L-SLS Bundle.xlsx"
+SLSpath <- "testing/local/T4 RNA Ligase/General Screen/210607-01-T4 RNA Ligase-Gen006L-SLS Bundle.xlsx"
 
 SLSbundle_sheets <- readxl::excel_sheets(SLSpath) |> {
   \(x) x[match(x[x != "Sheet1"], uniOrder)]
@@ -125,7 +127,7 @@ import_staticBundle_test <- function(path) {
 ```
 
 ```{r}
-SLSbundle_files <- list.files("data/local/T4 RNA Ligase/General Screen/",
+SLSbundle_files <- list.files("testing/local/T4 RNA Ligase/General Screen/",
   pattern = "SLS Bundle",
   full.names = TRUE
 ) |>  {
@@ -134,13 +136,64 @@ SLSbundle_files <- list.files("data/local/T4 RNA Ligase/General Screen/",
 # SLSbundle_files
 
 SLSbundles <- purrr::map(SLSbundle_files, import_staticBundle_test) |> {
-    \(l) rlang::set_names(l,
-      nm = purrr::map_chr(
-        SLSbundle_files,
-        stringr::str_extract, "(?<=//).*(?=\\.xlsx)"
-      )
+  \(l) rlang::set_names(l,
+    nm = purrr::map_chr(
+      SLSbundle_files,
+      stringr::str_extract, "(?<=//).*(?=\\.xlsx)"
     )
-  }()
+  )
+}()
 SLSbundles
+```
+
+
+### Dynamic Method Spectra
+
+```{r, message=FALSE}
+DLSpath <- "testing/local/T4 RNA Ligase/General Screen/210607-01-T4 RNA Ligase-Gen006L-DLS Bundle.xlsx"
+
+DLSbundle_sheets <- readxl::excel_sheets(DLSpath) |> {
+  \(x) x[x != "Sheet1"]
+}() |> rlang::set_names()
+# DLSbundle_sheets
+
+DLSbundle <- suppressMessages(purrr::map(
+  DLSbundle_sheets,
+  \(sheet) readxl::read_xlsx(
+    path = DLSpath,
+    sheet = sheet,
+    skip = 2,
+    col_types = "numeric",
+    .name_repair = "universal"
+  )
+))
+```
+
+```{r}
+df_i <- DLSbundle[grepl("Intensity", names(DLSbundle))] |> {
+  \(bundle) rlang::set_names(bundle,
+    nm = stringr::str_extract(names(bundle), "(?<=\\-)[A-P]\\d+\\-\\d+$")
+  )
+}() |> 
+  dplyr::bind_rows(.id = "uni") |>
+  tidyr::nest(specDLS_i = c(2:3))
+
+df_m <- DLSbundle[grepl("Mass", names(DLSbundle))] |> {
+  \(bundle) rlang::set_names(bundle,
+    nm = stringr::str_extract(names(bundle), "(?<=\\-)[A-P]\\d+\\-\\d+$")
+  )
+}() |> 
+  dplyr::bind_rows(.id = "uni") |>
+  tidyr::nest(specDLS_m = c(2:3))
+
+df_c <- DLSbundle[grepl("Correlation", names(DLSbundle))] |> {
+  \(bundle) rlang::set_names(bundle,
+    nm = stringr::str_extract(names(bundle), "(?<=\\-)[A-P]\\d+\\-\\d+$")
+  )
+}() |> 
+  dplyr::bind_rows(.id = "uni") |>
+  tidyr::nest(specDLS_c = c(2:3))
+
+reduce(list(df_i, df_m, df_c), dplyr::left_join, by = "uni")
 ```
 
