@@ -84,13 +84,14 @@ SLSbundle_sheets <- readxl::excel_sheets(SLSpath) |> {
 }() |> rlang::set_names()
 # SLSbundle_sheets
 
-SLSbundle <- purrr::map_dfr(SLSbundle_sheets,
+SLSbundle <- suppressMessages(purrr::map_dfr(SLSbundle_sheets,
   readxl::read_xlsx,
   path = SLSpath,
   skip = 3,
+  col_types = "numeric",
   .name_repair = "universal",
   .id = "uni"
-) |>
+)) |>
 tidyr::nest(FLUORspec = c(2:3), SLSspec266 = c(4:5), SLSspec473 = c(6:7)) |>
 dplyr::mutate(dplyr::across(
   tidyselect::contains("spec"),
@@ -100,17 +101,19 @@ SLSbundle
 ```
 
 ```{r}
-import_staticBundle <- function(path) {
+import_staticBundle_test <- function(path) {
   sheets <- readxl::excel_sheets(path) |> {
     \(s) s[match(s[s != "Sheet1"], uniOrder)]
   }() |> rlang::set_names()
 
-  bundle <- purrr::map_dfr(sheets,
+  bundle <- suppressMessages(purrr::map_dfr(sheets,
     readxl::read_xlsx,
-    path = path, skip = 3,
+    path = path,
+    skip = 3,
+    col_types = "numeric",
     .name_repair = "universal",
     .id = "uni"
-  ) |>
+  )) |>
   tidyr::nest(FLUORspec = c(2:3), SLSspec266 = c(4:5), SLSspec473 = c(6:7)) |>
   dplyr::mutate(dplyr::across(
     tidyselect::contains("spec"),
@@ -130,6 +133,14 @@ SLSbundle_files <- list.files("data/local/T4 RNA Ligase/General Screen/",
 }()
 # SLSbundle_files
 
-SLSbundles <- map_dfr(SLSbundle_files, import_staticBundle, .id = "file")
+SLSbundles <- purrr::map(SLSbundle_files, import_staticBundle_test) |> {
+    \(l) rlang::set_names(l,
+      nm = purrr::map_chr(
+        SLSbundle_files,
+        stringr::str_extract, "(?<=//).*(?=\\.xlsx)"
+      )
+    )
+  }()
 SLSbundles
 ```
+
