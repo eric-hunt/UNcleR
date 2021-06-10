@@ -79,7 +79,7 @@ uniOrder <- purrr::map2_chr(rep(c(LETTERS[1:16]), 3), purrr::flatten_chr(purrr::
 ### Static Method Spectra
 
 ```{r, message=FALSE}
-SLSpath <- "testing/local/T4 RNA Ligase/General Screen/210607-01-T4 RNA Ligase-Gen006L-SLS Bundle.xlsx"
+SLSpath <- "ln/local/T4 RNA Ligase/Exports/General Screen/210607-01-T4 RNA Ligase-Gen006L-SLS Bundle.xlsx"
 
 SLSbundle_sheets <- readxl::excel_sheets(SLSpath) |> {
   \(x) x[match(x[x != "Sheet1"], uniOrder)]
@@ -95,12 +95,26 @@ SLSbundle <- suppressMessages(purrr::map_dfr(SLSbundle_sheets,
   .name_repair = "universal",
   .id = "uni"
 )) |>
-tidyr::nest(FLUORspec = c(2:3), SLSspec266 = c(4:5), SLSspec473 = c(6:7)) |>
+tidyr::nest(specTm = c(2:3), specSLS266 = c(4:5), specSLS473 = c(6:7)) |>
 dplyr::mutate(dplyr::across(
   tidyselect::contains("spec"),
   \(lcol) purrr::map(lcol, \(df) dplyr::rename_with(df, .cols = 1, .fn = ~"temp_C"))
+)) |> 
+  dplyr::mutate(dplyr::across(
+  tidyselect::any_of(c("specSLS266", "specSLS473")),
+  \(lcol) purrr::map(lcol, function(df) {
+    dplyr::rename_with(df, .cols = c(1, 2), .fn = ~ c("temp_x", "intensity_y"))
+  })
+)) |> 
+  dplyr::mutate(dplyr::across(
+  tidyselect::any_of(c("specTm")),
+  \(lcol) purrr::map(lcol, function(df) {
+    dplyr::rename_with(df, .cols = c(1, 2), .fn = ~ c("temp_x", "BCM_y"))
+  })
 ))
-SLSbundle
+SLSbundle# |> {
+  # \(df) df[["specTm"]][[1]]
+# }()
 ```
 
 ```{r}
@@ -128,7 +142,7 @@ import_staticBundle_test <- function(path) {
 ```
 
 ```{r}
-SLSbundle_files <- list.files("testing/local/T4 RNA Ligase/General Screen/",
+SLSbundle_files <- list.files("ln/local/T4 RNA Ligase/Exports/General Screen/",
   pattern = "SLS Bundle",
   full.names = TRUE
 ) |>  {
@@ -151,7 +165,7 @@ SLSbundles
 ### Dynamic Method Spectra
 
 ```{r, message=FALSE}
-DLSpath <- "testing/local/T4 RNA Ligase/General Screen/210607-01-T4 RNA Ligase-Gen006L-DLS Bundle.xlsx"
+DLSpath <- "ln/local/T4 RNA Ligase/Exports/General Screen/210607-01-T4 RNA Ligase-Gen006L-DLS Bundle.xlsx"
 
 DLSbundle_sheets <- readxl::excel_sheets(DLSpath) |> {
   \(x) x[x != "Sheet1"]
@@ -177,7 +191,7 @@ df_i <- DLSbundle[grepl("Intensity", names(DLSbundle))] |> {
   )
 }() |>
 dplyr::bind_rows(.id = "uni") |>
-tidyr::nest(specDLS_i = c(2:3))
+tidyr::nest(specDLS_I = c(2:3))
 
 df_m <- DLSbundle[grepl("Mass", names(DLSbundle))] |> {
   \(bundle) rlang::set_names(bundle,
@@ -185,7 +199,7 @@ df_m <- DLSbundle[grepl("Mass", names(DLSbundle))] |> {
   )
 }() |>
 dplyr::bind_rows(.id = "uni") |>
-tidyr::nest(specDLS_m = c(2:3))
+tidyr::nest(specDLS_M = c(2:3))
 
 df_c <- DLSbundle[grepl("Correlation", names(DLSbundle))] |> {
   \(bundle) rlang::set_names(bundle,
@@ -193,10 +207,32 @@ df_c <- DLSbundle[grepl("Correlation", names(DLSbundle))] |> {
   )
 }() |>
 dplyr::bind_rows(.id = "uni") |>
-tidyr::nest(specDLS_c = c(2:3))
+tidyr::nest(specDLS_C = c(2:3))
 
-reduce(list(df_i, df_m, df_c), dplyr::left_join, by = "uni")
+DLStable <- reduce(list(df_c, df_i, df_m), dplyr::left_join, by = "uni")
 ```
+
+```{r}
+DLStable |>
+tidyr::separate(uni, into = c("uni", "temp_C"), sep = "-", convert = TRUE) |>
+dplyr::filter(temp_C == min(temp_C)) |>
+dplyr::select(-temp_C) |>
+dplyr::mutate(dplyr::across(
+  tidyselect::any_of(c("specDLS_I", "specDLS_M")),
+  \(lcol) purrr::map(lcol, function(df) {
+    dplyr::rename_with(df, .cols = c(1, 2), .fn = ~ c("hydroDia_x", "amp_y"))
+  })
+)) |>
+dplyr::mutate(dplyr::across(
+  tidyselect::any_of(c("specDLS_C")),
+  \(lcol) purrr::map(lcol, function(df) {
+    dplyr::rename_with(df, .cols = c(1, 2), .fn = ~ c("time_x", "amp_y"))
+  })
+)) |> {
+  \(df) df[["specDLS_C"]][[1]]
+}()
+```
+
 
 ```{r}
 import_dynamicBundle_test <- function(path) {
@@ -215,7 +251,7 @@ import_dynamicBundle_test <- function(path) {
     )
   ))
 
-  table <- reduce(# iterate through the dfs two at a time..
+  table <- reduce( # iterate through the dfs two at a time..
     list(
       # correlation
       bundle[grepl("Correlation", names(bundle))] |> {
@@ -245,14 +281,30 @@ import_dynamicBundle_test <- function(path) {
     # ..using join function
     dplyr::left_join,
     by = "uni"
-  )
-  
+  ) |>
+  tidyr::separate(uni, into = c("uni", "temp_C"), sep = "-", convert = TRUE) |>
+  dplyr::filter(temp_C == min(temp_C)) |>
+  dplyr::select(-temp_C) |>
+  dplyr::mutate(dplyr::across(
+    tidyselect::any_of(c("specDLS_I", "specDLS_M")),
+    \(lcol) purrr::map(lcol, function(df) {
+      dplyr::rename_with(df, .cols = c(1, 2), .fn = ~ c("hydroDia_x", "amp_y"))
+    })
+  )) |>
+  dplyr::mutate(dplyr::across(
+    tidyselect::any_of(c("specDLS_C")),
+    \(lcol) purrr::map(lcol, function(df) {
+      dplyr::rename_with(df, .cols = c(1, 2), .fn = ~ c("time_x", "amp_y"))
+    })
+  ))
+
+
   return(table)
 }
 ```
 
 ```{r}
-DLSbundle_files <- list.files("testing/local/T4 RNA Ligase/General Screen/",
+DLSbundle_files <- list.files("ln/local/T4 RNA Ligase/Exports/General Screen/",
   pattern = "DLS Bundle",
   full.names = TRUE
 ) |> {

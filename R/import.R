@@ -49,10 +49,23 @@ import_staticBundle <- function(directory_path, pattern = "SLS Bundle", skip = 3
       .name_repair = "universal",
       .id = "uni"
     )) |>
-    tidyr::nest(FLUORspec = c(2:3), SLSspec266 = c(4:5), SLSspec473 = c(6:7)) |>
+    tidyr::nest(specTm = c(2:3), specSLS266 = c(4:5), specSLS473 = c(6:7)) |>
     dplyr::mutate(dplyr::across(
       tidyselect::contains("spec"),
       \(lcol) purrr::map(lcol, \(df) dplyr::rename_with(df, .cols = 1, .fn = ~"temp_C"))
+    )) |>
+    # this makes spectra column names compatible with UncleDashboard modules
+    dplyr::mutate(dplyr::across(
+      tidyselect::any_of(c("specSLS266", "specSLS473")),
+      \(lcol) purrr::map(lcol, function(df) {
+        dplyr::rename_with(df, .cols = c(1, 2), .fn = ~ c("temp_x", "intensity_y"))
+      })
+    )) |>
+    dplyr::mutate(dplyr::across(
+      tidyselect::any_of(c("specTm")),
+      \(lcol) purrr::map(lcol, function(df) {
+        dplyr::rename_with(df, .cols = c(1, 2), .fn = ~ c("temp_x", "BCM_y"))
+      })
     ))
 
     return(table)
@@ -79,6 +92,9 @@ import_staticBundle <- function(directory_path, pattern = "SLS Bundle", skip = 3
 #' Import dynamic UNcle spectra (DLS) into R
 #'
 #' \code{import_dynamicBundle}
+#'
+#' Note: This import function will only import DLS spectra performed at
+#' the beginning of the temperature ramp, i.e. the lowest temperature.
 #'
 #' @param directory_path a path to a directory containing the exported .xlsx files
 #' @param pattern a regex for narrowing selection of files in the `directory_path`;
@@ -133,7 +149,7 @@ import_dynamicBundle <- function(directory_path, pattern = "DLS Bundle", skip = 
           )
         }() |>
         dplyr::bind_rows(.id = "uni") |>
-        tidyr::nest(specDLS_c = c(2:3)),
+        tidyr::nest(specDLS_C = c(2:3)),
         # intensity
         bundle[grepl("Intensity", names(bundle))] |> {
           \(b) rlang::set_names(b,
@@ -141,7 +157,7 @@ import_dynamicBundle <- function(directory_path, pattern = "DLS Bundle", skip = 
           )
         }() |>
         dplyr::bind_rows(.id = "uni") |>
-        tidyr::nest(specDLS_i = c(2:3)),
+        tidyr::nest(specDLS_I = c(2:3)),
         # mass
         bundle[grepl("Mass", names(bundle))] |> {
           \(b) rlang::set_names(b,
@@ -149,12 +165,29 @@ import_dynamicBundle <- function(directory_path, pattern = "DLS Bundle", skip = 
           )
         }() |>
         dplyr::bind_rows(.id = "uni") |>
-        tidyr::nest(specDLS_m = c(2:3))
+        tidyr::nest(specDLS_M = c(2:3))
       ),
       # ..using join function
       dplyr::left_join,
       by = "uni"
-    )
+    ) |>
+    # select for DLS experiments performed at beginning of temperature ramp
+    tidyr::separate(uni, into = c("uni", "temp_C"), sep = "-", convert = TRUE) |>
+    dplyr::filter(temp_C == min(temp_C)) |>
+    dplyr::select(-temp_C) |>
+    # this makes spectra column names compatible with UncleDashboard modules
+    dplyr::mutate(dplyr::across(
+      tidyselect::any_of(c("specDLS_I", "specDLS_M")),
+      \(lcol) purrr::map(lcol, function(df) {
+        dplyr::rename_with(df, .cols = c(1, 2), .fn = ~ c("hydroDia_x", "amp_y"))
+      })
+    )) |>
+    dplyr::mutate(dplyr::across(
+      tidyselect::any_of(c("specDLS_C")),
+      \(lcol) purrr::map(lcol, function(df) {
+        dplyr::rename_with(df, .cols = c(1, 2), .fn = ~ c("time_x", "amp_y"))
+      })
+    ))
 
     return(table)
   }
