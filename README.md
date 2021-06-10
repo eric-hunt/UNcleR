@@ -12,18 +12,27 @@
 Labs *UNcle* instrument for downstream processing of biologics stability
 data.
 
+Core functions for summary and “bundle export” files:
+
+-   `import_staticBundle` imports nanoDSF and SLS spectra bundle
+-   `import_dynamicBundle` imports DLS spectra bundle files
 -   `import_DLSsum()` imports DLS summary data
--   `import_DLSspec()` imports DLS intensity or mass distribution
-    spectra
--   `import_SLSsum()` imports SLS and thermal ramp summary data
--   `import_SLSspec` imports raw SLS spectral data at a specified
-    wavelength
--   `import_FLUORspec()` imports fluorescence spectra used for Tm calc
--   `join_SLS_DLS` joins SLS and DLS data together before metadata
-    assignment
+-   `import_SLSsum()` imports nanoDSF and SLS thermal ramp summary data
 -   `get_meta` imports metadata from an Excel document into a list of
     dataframes
 -   `add_meta` assigns metadata to an imported and parsed dataframe
+
+Legacy functions for “complete export” files:
+
+-   `import_DLSspec()` imports correlation, intensity, or mass
+    distribution DLS spectra
+-   `import_SLSspec` imports SLS spectra at a specified wavelength
+-   `import_FLUORspec()` imports nanoDSF spectra
+
+Questioning:
+
+-   `join_SLS_DLS` joins SLS and DLS data together before metadata
+    assignment
 
 ## Installation
 
