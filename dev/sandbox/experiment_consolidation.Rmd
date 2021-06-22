@@ -20,7 +20,7 @@ knitr::opts_chunk$set(
 )
 # set working directory for chunks and show progress bar for knitr actions
 knitr::opts_knit$set(
-  root.dir = "~/GitHub/UNcleR/",
+  root.dir = "~/OneDrive - New England Biolabs/Documents/AppDev/Uncle Data Analysis/DataPrep/",
   progress = TRUE
 )
 
@@ -78,35 +78,51 @@ uniOrder <- purrr::map2_chr(rep(c(LETTERS[1:16]), 3), purrr::flatten_chr(purrr::
 A function should be developed to serve as a single tool for consolidating all experimental data based on directory hierarchy. Currently, single-use or anonymous functions are written to import Uncle data and package it for the dashboard.
 
 ```{r}
-# run_info <- list(
-#   user = "Eric Hunt",
-#   date = lubridate::today(),
-#   protein_full = "Bst 2.0 Polymerase",
-#   protein_abbrev = "Bst2Pol",
-#
-# )
-#
-# experiments <- list(
-#     "General" = glue::glue("{run_info$protein_abbrev}/Exports/General Screen/"),
-#     "pH" = glue::glue("{run_info$protein_abbrev}/Exports/pH Screen/")
-#   )
+run_info <- list(
+  user = "Eric Hunt",
+  date = lubridate::today(),
+  protein_full = "Bst 2.0 Polymerase",
+  protein_abbrev = "Bst2Pol"
+)
 
-consolidate_experiments <- function(run_info, experiments, join_vars = NULL) {
+experiments <- list(
+    "General" = glue::glue("{run_info$protein_abbrev}/Exports/General Screen/"),
+    "pH" = glue::glue("{run_info$protein_abbrev}/Exports/pH Screen/")
+  )
+```
+
+
+```{r}
+consolidate_experiments <- function(run_info, experiments, join_vars = NULL, legacy = FALSE, SLSheader = TRUE, DLSheader = FALSE) {
   meta <- run_info
 
   if (is.null(meta)) stop("No run info has been supplied. See documentation for details.")
   if (is.null(experiments)) stop("Experiment (i.e. plates) to consolidate must be supplied. See documentation for details.")
   if (is.null(meta$date)) meta$date <- lubridate::today()
   if (is.null(join_vars)) join_vars <- c("date", "instrument", "protein", "plate", "uni")
-
+  
   import_experiment <- function(dir, protein) {
-    purrr::reduce(
-      list(
-        SLSsum = UNcleR::import_SLSsum(dir, header = TRUE),
-        DLSsum = UNcleR::import_DLSsum(dir, header = FALSE),
+    if (legacy) {
+      importList <- list(
+        FLUORspec = UNcleR::import_FLUORspec(dir),
+        SLSsum = UNcleR::import_SLSsum(dir, header = SLSheader),
+        SLSspec266 = UNcleR::import_SLSspec(dir, lambda = 266),
+        SLSspec473 = UNcleR::import_SLSspec(dir, lambda = 473),
+        DLSsum = UNcleR::import_DLSsum(dir, header = DLSheader),
+        DLSspecC = UNcleR::import_DLSspec(dir, pattern = "DLS Spec C", type = "C"),
+        DLSspecI = UNcleR::import_DLSspec(dir, pattern = "DLS Spec I", type = "I"),
+        DLSspecM = UNcleR::import_DLSspec(dir, pattern = "DLS Spec M", type = "M")
+      )
+    } else {
+      importList <- list(
+        SLSsum = UNcleR::import_SLSsum(dir, header = SLSheader),
+        DLSsum = UNcleR::import_DLSsum(dir, header = DLSheader),
         specStatic = UNcleR::import_staticBundle(dir),
         specDynamic = UNcleR::import_dynamicBundle(dir)
-      ),
+      )
+    }
+    purrr::reduce(
+      importList,
       dplyr::full_join,
       by = join_vars
     ) |>
@@ -127,3 +143,8 @@ consolidate_experiments <- function(run_info, experiments, join_vars = NULL) {
   return(expList)
 }
 ```
+
+```{r}
+test <- consolidate_experiments(run_info, experiments)
+```
+
