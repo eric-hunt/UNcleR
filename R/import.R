@@ -28,7 +28,7 @@ import_staticBundle <- function(directory_path, pattern = "SLS Bundle", skip = 3
     \(l) rlang::set_names(l,
       nm = purrr::map_chr(
         l,
-        stringr::str_extract, "(?<=//).*(?=\\.(xls|xlsx))"
+        stringr::str_extract, "\\d{6}(?!/).*$"
       )
     )
   }()
@@ -75,13 +75,19 @@ import_staticBundle <- function(directory_path, pattern = "SLS Bundle", skip = 3
     \(l) rlang::set_names(l,
       nm = purrr::map_chr(
         file_list,
-        stringr::str_extract, "(?<=//).*(?=\\.(xls|xlsx))"
+        stringr::str_extract, "\\d{6}(?!/).*$"
       )
     )
   }()
 
   if (combine) {
-    return(dplyr::bind_rows(spectra_tables, .id = "origin") |>
+    return(dplyr::bind_rows(spectra_tables, .id = "origin") |> {
+      \(df) dplyr::mutate(df, origin = dplyr::if_else(
+        stringr::str_detect(df$origin, stringr::regex("\\.uni.*$")),
+        stringr::str_extract(df$origin, stringr::regex(".*(?=\\.uni)", ignore_case = TRUE)),
+        stringr::str_extract(df$origin, stringr::regex(".*(?=\\.(xls|xlsx))", ignore_case = TRUE))
+      ))
+    }() |>
     tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-"))
   } else {
     return(spectra_tables)
@@ -116,7 +122,7 @@ import_dynamicBundle <- function(directory_path, pattern = "DLS Bundle", skip = 
     \(l) rlang::set_names(l,
       nm = purrr::map_chr(
         l,
-        stringr::str_extract, "(?<=//).*(?=\\.(xls|xlsx))"
+        stringr::str_extract, "\\d{6}(?!/).*$"
       )
     )
   }()
@@ -196,13 +202,19 @@ import_dynamicBundle <- function(directory_path, pattern = "DLS Bundle", skip = 
     \(l) rlang::set_names(l,
       nm = purrr::map_chr(
         file_list,
-        stringr::str_extract, "(?<=//).*(?=\\.(xls|xlsx))"
+        stringr::str_extract, "\\d{6}(?!/).*$"
       )
     )
   }()
 
   if (combine) {
-    return(dplyr::bind_rows(spectra_tables, .id = "origin") |>
+    return(dplyr::bind_rows(spectra_tables, .id = "origin") |> {
+      \(df) dplyr::mutate(df, origin = dplyr::if_else(
+        stringr::str_detect(df$origin, stringr::regex("\\.uni.*$")),
+        stringr::str_extract(df$origin, stringr::regex(".*(?=\\.uni)", ignore_case = TRUE)),
+        stringr::str_extract(df$origin, stringr::regex(".*(?=\\.(xls|xlsx))", ignore_case = TRUE))
+      ))
+    }() |>
     tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-"))
   } else {
     return(spectra_tables)
