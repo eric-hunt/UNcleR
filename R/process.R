@@ -1,19 +1,87 @@
-#' Joins imported and parsed DLS and Tm/Tagg SLS summary dataframes from the same experiment
+#' Consolidates Uncle Experiments
 #'
-#' \code{join_SLS_DLS}
+#' This function consolidates experiments for a protein based on directory hierarchy.
+#' The hierarchy should be as follows from within the working directory where these
+#' functions will be executed:
+#' 
+#' <wd>/
+#'    <prot_dir>/
+#'        "Exports"/
+#'            "General Screen"
+#'            "pH Screen"
+#'            ...
 #'
-#' @param SLS_data a dataframe object containing SLS data
-#' @param DLS_data a dataframe object containing DLS data
-#' @param .by a character vector of variable names by which to join tables;
-#' defaults to c("well", "sample_num", "prot_conc")
-#' @return a dataframe
+#' The \code{prot_dir} argument should match the name of the protein subdirectory within
+#' the working directory. This is deliberate as it forces the user to make
+#' a coherent choice about which data to process. Exported summary and spectra
+#' should be contained within named subdirectories of a directory named "Exports"
+#' located within the \code{prot_dir} directory.
+#'
+#' \code{consolidate_experiments}
+#'
+#' @param prot_dir a character string identical to subdirectory name of working directory
+#' where the experiment "Exports" folder is located for the protein being analyzed
+#' @param legacy a boolean value, TRUE if individual SLS/DLS spectra files were exported,
+#' FALSE if SLS/DLS "bunble" files were exported; default is FALSE
+#' @param SLSheader sets header argument for \code{UNcleR::import_SLSsum}; defaluts to TRUE
+#' @param DLSheader sets header argument for \code{UNcleR::import_DLSsum}; defaults to FALSE
+#' @return a named list of dataframes containing the consolidated data for each experiment
 #' @export
-join_SLS_DLS <- function(SLS_data, DLS_data, .by = c("well", "sample_num", "prot_conc")) {
-  dplyr::full_join(
-    SLS_data,
-    DLS_data,
-    by = .by
-  )
+consolidate_experiments <- function(prot_dir, join_vars = NULL, legacy = FALSE, SLSheader = TRUE, DLSheader = FALSE) {
+  if (!(dir.exists(prot_dir))) {
+    stop("The provided protein directory does not exist.")
+  }
+  if (!(dir.exists(paste0(prot_dir, "/", "Exports")))) {
+    stop("There is no 'Exports' subdirectory. Where are the export files?")
+  }
+
+  if (is.null(join_vars)) {
+    join_vars <- c("date", "instrument", "protein", "plate", "uni")
+  }
+
+  dirList <- list.dirs(paste0(prot_dir, "/Exports/"), full.names = TRUE, recursive = FALSE) |>
+  rlang::set_names(nm = list.dirs(paste0(prot_dir, "/Exports/"), full.names = FALSE, recursive = FALSE))
+
+  import_experiment <- function(dir, protein) {
+    if (legacy) {
+      importList <- list(
+        FLUORspec = UNcleR::import_FLUORspec(dir),
+        SLSsum = UNcleR::import_SLSsum(dir, header = SLSheader),
+        SLSspec266 = UNcleR::import_SLSspec(dir, lambda = 266),
+        SLSspec473 = UNcleR::import_SLSspec(dir, lambda = 473),
+        DLSsum = UNcleR::import_DLSsum(dir, header = DLSheader),
+        DLSspecC = UNcleR::import_DLSspec(dir, pattern = "DLS Spec C", type = "C"),
+        DLSspecI = UNcleR::import_DLSspec(dir, pattern = "DLS Spec I", type = "I"),
+        DLSspecM = UNcleR::import_DLSspec(dir, pattern = "DLS Spec M", type = "M")
+      )
+    } else {
+      importList <- list(
+        SLSsum = UNcleR::import_SLSsum(dir, header = SLSheader),
+        DLSsum = UNcleR::import_DLSsum(dir, header = DLSheader),
+        specStatic = UNcleR::import_staticBundle(dir),
+        specDynamic = UNcleR::import_dynamicBundle(dir)
+      )
+    }
+    purrr::reduce(
+      importList,
+      dplyr::full_join,
+      by = join_vars
+    ) |>
+    dplyr::select(-tidyselect::contains("sample"), -tidyselect::contains("file")) |> {
+      \(df) dplyr::mutate(
+        df,
+        plate = stringr::str_trim(df$plate, side = "both"),
+        protein = protein
+      )
+    }()
+  }
+
+  consolidated <- purrr::map(
+    dirList,
+    \(dir) import_experiment(dir, prot_dir)
+  ) # |> rlang::set_names(nm = names(expList))
+
+  return(consolidated)
 }
 
 
@@ -27,12 +95,12 @@ join_SLS_DLS <- function(SLS_data, DLS_data, .by = c("well", "sample_num", "prot
 #' @return a named list of tibbles containing metadata for experiments
 #' @export
 get_meta <- function(path) {
-  sheets <- readxl::excel_sheets(path) %>% 
+  sheets <- readxl::excel_sheets(path) %>%
     purrr::set_names()
   sheets <- sheets[-grepl("Variables", sheets)]
-  
+
   meta <- purrr::map(sheets, ~ readxl::read_excel(path, sheet = .x))
-  
+
   return(meta)
 }
 
@@ -49,6 +117,26 @@ get_meta <- function(path) {
 #' @export
 add_meta <- function(data, meta) {
   wellOrder <- purrr::map2_chr(rep(c(LETTERS[1:8]), 12), purrr::flatten_chr(purrr::map(c(1:12), rep, 8)), paste0)
-  dplyr::left_join(meta[[unique(stringr::str_sub(data$plate, end = -2))]], data, by = c("plate", "uni")) %>% 
+  dplyr::left_join(meta[[unique(stringr::str_sub(data$plate, end = -2))]], data, by = c("plate", "uni")) %>%
     dplyr::arrange(match(well, wellOrder))
+}
+
+
+
+#' Joins imported and parsed DLS and Tm/Tagg SLS summary dataframes from the same experiment
+#'
+#' \code{join_SLS_DLS}
+#'
+#' @param SLS_data a dataframe object containing SLS data
+#' @param DLS_data a dataframe object containing DLS data
+#' @param .by a character vector of variable names by which to join tables;
+#' defaults to c("well", "sample_num", "prot_conc")
+#' @return a dataframe
+#' @export
+join_SLS_DLS <- function(SLS_data, DLS_data, .by = c("well", "sample_num", "prot_conc")) {
+  dplyr::full_join(
+    SLS_data,
+    DLS_data,
+    by = .by
+  )
 }
