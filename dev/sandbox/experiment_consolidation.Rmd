@@ -86,21 +86,28 @@ run_info <- list(
 )
 
 experiments <- list(
-    "General" = glue::glue("{run_info$protein_abbrev}/Exports/General Screen/"),
-    "pH" = glue::glue("{run_info$protein_abbrev}/Exports/pH Screen/")
-  )
+  "General" = glue::glue("{run_info$protein_abbrev}/Exports/General Screen/"),
+  "pH" = glue::glue("{run_info$protein_abbrev}/Exports/pH Screen/")
+)
 ```
 
 
 ```{r}
-consolidate_experiments <- function(run_info, experiments, join_vars = NULL, legacy = FALSE, SLSheader = TRUE, DLSheader = FALSE) {
-  meta <- run_info
+consolidate_experiments <- function(prot_dir, join_vars = NULL, legacy = FALSE, SLSheader = TRUE, DLSheader = FALSE) {
+  if (!(dir.exists(prot_dir))) {
+    stop("The provided protein directory does not exist.")
+  }
+  if (!(dir.exists(paste0(prot_dir, "/", "Exports")))) {
+    stop("There is no 'Exports' subdirectory. Where are the export files?")
+  }
 
-  if (is.null(meta)) stop("No run info has been supplied. See documentation for details.")
-  if (is.null(experiments)) stop("Experiment (i.e. plates) to consolidate must be supplied. See documentation for details.")
-  if (is.null(meta$date)) meta$date <- lubridate::today()
-  if (is.null(join_vars)) join_vars <- c("date", "instrument", "protein", "plate", "uni")
-  
+  if (is.null(join_vars)) {
+    join_vars <- c("date", "instrument", "protein", "plate", "uni")
+  }
+
+  dirList <- list.dirs(paste0(prot_dir, "/Exports/"), full.names = TRUE, recursive = FALSE) |>
+  rlang::set_names(nm = list.dirs(paste0(prot_dir, "/Exports/"), full.names = FALSE, recursive = FALSE))
+
   import_experiment <- function(dir, protein) {
     if (legacy) {
       importList <- list(
@@ -135,16 +142,15 @@ consolidate_experiments <- function(run_info, experiments, join_vars = NULL, leg
     }()
   }
 
-  expList <- purrr::map(
-    experiments,
-    \(dir) import_experiment(dir, meta$protein_abbrev)
-  ) |> rlang::set_names(nm = names(experiments))
+  consolidated <- purrr::map(
+    dirList,
+    \(dir) import_experiment(dir, prot_dir)
+  ) # |> rlang::set_names(nm = names(expList))
 
-  return(expList)
+  return(consolidated)
 }
 ```
 
 ```{r}
-test <- consolidate_experiments(run_info, experiments)
+test <- consolidate_experiments("Bst2Pol")
 ```
-
