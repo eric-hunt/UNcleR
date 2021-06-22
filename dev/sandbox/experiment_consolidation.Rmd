@@ -78,57 +78,52 @@ uniOrder <- purrr::map2_chr(rep(c(LETTERS[1:16]), 3), purrr::flatten_chr(purrr::
 A function should be developed to serve as a single tool for consolidating all experimental data based on directory hierarchy. Currently, single-use or anonymous functions are written to import Uncle data and package it for the dashboard.
 
 ```{r}
-# the_user <- "Eric Hunt"
-# 
-# the_date <- lubridate::today()
-# 
-# protein_full <- "Bst 2.0 Polymerase"
-# protein_abbrev <- "Bst2Pol"
-# 
-# experiments <- list(
-#   "General" = glue::glue("{protein_abbrev}/Exports/General Screen/"),
-#   "pH" = glue::glue("{protein_abbrev}/Exports/pH Screen/")
+# run_info <- list(
+#   user = "Eric Hunt",
+#   date = lubridate::today(),
+#   protein_full = "Bst 2.0 Polymerase",
+#   protein_abbrev = "Bst2Pol",
+#
 # )
-
-# Currently using this and vectorizing with purrr::map as shown below.
-# It would be best to vectorize this function to handle everything at once.
-consolidate_experiment <- function(directory, protein, plate) {
-  dataList <- list(
-    SLSsum = UNcleR::import_SLSsum(directory, header = TRUE),
-    DLSsum = UNcleR::import_DLSsum(directory, header = FALSE),
-    specStatic = UNcleR::import_staticBundle(directory),
-    specDynamic = UNcleR::import_dynamicBundle(directory)
-  )
-
-  dataMerge <- purrr::reduce(dataList,
-    dplyr::full_join,
-    by = c("date", "instrument", "protein", "plate", "uni")
-  ) |>
-  dplyr::select(-tidyselect::contains("sample"), -tidyselect::contains("file")) |> {
-    \(df) dplyr::mutate(df, plate = stringr::str_trim(df$plate, side = "both"))
-  }()
-
-  return(dataMerge)
-}
-
-# uncleData <- purrr::map(
-#   experiments,
-#   \(dir, title) consolidate_experiment(
-#     directory = dir,
-#     protein = protein_abbrev,
-#     plate = title
+#
+# experiments <- list(
+#     "General" = glue::glue("{run_info$protein_abbrev}/Exports/General Screen/"),
+#     "pH" = glue::glue("{run_info$protein_abbrev}/Exports/pH Screen/")
 #   )
-# ) |> rlang::set_names(nm = purrr::map_chr(names(experiments), paste0))
+
+consolidate_experiments <- function(run_info, experiments, join_vars = NULL) {
+  meta <- run_info
+
+  if (is.null(meta)) stop("No run info has been supplied. See documentation for details.")
+  if (is.null(experiments)) stop("Experiment (i.e. plates) to consolidate must be supplied. See documentation for details.")
+  if (is.null(meta$date)) meta$date <- lubridate::today()
+  if (is.null(join_vars)) join_vars <- c("date", "instrument", "protein", "plate", "uni")
+
+  import_experiment <- function(dir, protein) {
+    purrr::reduce(
+      list(
+        SLSsum = UNcleR::import_SLSsum(dir, header = TRUE),
+        DLSsum = UNcleR::import_DLSsum(dir, header = FALSE),
+        specStatic = UNcleR::import_staticBundle(dir),
+        specDynamic = UNcleR::import_dynamicBundle(dir)
+      ),
+      dplyr::full_join,
+      by = join_vars
+    ) |>
+    dplyr::select(-tidyselect::contains("sample"), -tidyselect::contains("file")) |> {
+      \(df) dplyr::mutate(
+        df,
+        plate = stringr::str_trim(df$plate, side = "both"),
+        protein = protein
+      )
+    }()
+  }
+
+  expList <- purrr::map(
+    experiments,
+    \(dir) import_experiment(dir, meta$protein_abbrev)
+  ) |> rlang::set_names(nm = names(experiments))
+
+  return(expList)
+}
 ```
-
-<!-- #' Consolidates experiments for a protein based on directory hierarchy -->
-<!-- #'  -->
-<!-- #' \code{consolidate_experiments} -->
-<!-- #'  -->
-<!-- #' @param directory a directory path named after the protein (e.g. ~/Protein_A will be "Protein_A") -->
-<!-- #'  -->
-<!-- #' @return  -->
-<!-- #' @export -->
-<!-- consolidate_experiments <- function() { -->
-
-<!-- } -->
