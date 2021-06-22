@@ -22,8 +22,14 @@ import_FLUORspec <- function(directory_path, pattern = "Tm Spec", header = TRUE,
     skip <- 0
   }
 
-  file_list <- list.files(directory_path, pattern = pattern, full.names = TRUE) %>%
-    purrr::set_names()
+  file_list <- list.files(directory_path, pattern = pattern, full.names = TRUE) |> {
+    \(l) rlang::set_names(l,
+      nm = purrr::map_chr(
+        l,
+        stringr::str_extract, "\\d{6}(?!/).*$"
+      )
+    )
+  }()
 
   sheet_list <- file_list %>%
     purrr::map(readxl::excel_sheets) %>%
@@ -41,18 +47,20 @@ import_FLUORspec <- function(directory_path, pattern = "Tm Spec", header = TRUE,
           # purrr::modify(readr::parse_number) %>%
           (function(df) {
             if (any(names(df) == "Temperature") & any(names(df) == "BCM...nm")) {
-              df_modified <- df %>% 
-                dplyr::select("Temperature", "BCM...nm") %>% 
+              df_modified <- df %>%
+                dplyr::select("Temperature", "BCM...nm") %>%
                 dplyr::rename(temp_x = Temperature, BCM_y = BCM...nm)
             } else {
-              df_modified <- df %>% 
-                dplyr::select(c(1:2)) %>% 
+              df_modified <- df %>%
+                dplyr::select(c(1:2)) %>%
                 dplyr::rename(temp_x = 1, BCM_y = 2)
               message("Some variables are missing or non-standard. The first two variables will be used.")
             }
             return(df_modified)
-          }) %>% 
-          {suppressMessages(tidyr::nest(., specTm = c(temp_x, BCM_y)))} %>%
+          }) %>%
+          {
+            suppressMessages(tidyr::nest(., specTm = c(temp_x, BCM_y)))
+          } %>%
           dplyr::select(specTm),
         .id = "uni"
       )
@@ -65,8 +73,8 @@ import_FLUORspec <- function(directory_path, pattern = "Tm Spec", header = TRUE,
         dplyr::mutate(
           origin = dplyr::if_else(
             stringr::str_detect(.$origin, stringr::regex("\\.uni.*$")),
-            stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.uni)", ignore_case = TRUE)),
-            stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.(xls|xlsx))", ignore_case = TRUE))
+            stringr::str_extract(.$origin, stringr::regex(".*(?=\\.uni)", ignore_case = TRUE)),
+            stringr::str_extract(.$origin, stringr::regex(".*(?=\\.(xls|xlsx))", ignore_case = TRUE))
           )
         ) %>%
         # dplyr::mutate(origin = stringr::str_extract(.$origin, stringr::regex("(?<=//).*\\.(uni|xls|xlsx)", ignore_case = TRUE))) %>%

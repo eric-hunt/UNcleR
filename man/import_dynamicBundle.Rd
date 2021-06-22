@@ -29,6 +29,6 @@ a named (with filename) list of dataframes or a single merged dataframe
 \code{import_dynamicBundle}
 }
 \details{
-Note: This import function will only import DLS spectra performed at 
+Note: This import function will only import DLS spectra performed at
 the beginning of the temperature ramp, i.e. the lowest temperature.
 }

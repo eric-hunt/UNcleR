@@ -24,8 +24,14 @@ import_DLSsum <- function(directory_path, pattern = "DLS Sum", sheet = NULL, tem
     skip <- 5
   }
 
-  file_list <- list.files(directory_path, pattern = pattern, full.names = TRUE) %>%
-    purrr::set_names()
+  file_list <- list.files(directory_path, pattern = pattern, full.names = TRUE) |> {
+    \(l) rlang::set_names(l,
+      nm = purrr::map_chr(
+        l,
+        stringr::str_extract, "\\d{6}(?!/).*$"
+      )
+    )
+  }()
 
   df_list <- purrr::map(file_list, readxl::read_excel, sheet = sheet, col_types = "text", skip = skip)
 
@@ -135,8 +141,8 @@ import_DLSsum <- function(directory_path, pattern = "DLS Sum", sheet = NULL, tem
         dplyr::mutate(
           origin = dplyr::if_else(
             stringr::str_detect(.$origin, stringr::regex("\\.uni.*$")),
-            stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.uni)", ignore_case = TRUE)),
-            stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.(xls|xlsx))", ignore_case = TRUE))
+            stringr::str_extract(.$origin, stringr::regex(".*(?=\\.uni)", ignore_case = TRUE)),
+            stringr::str_extract(.$origin, stringr::regex(".*(?=\\.(xls|xlsx))", ignore_case = TRUE))
           )
         ) %>%
         tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-") %>%
@@ -180,14 +186,20 @@ import_DLSspec <- function(directory_path, pattern = NULL, type = NA, header = T
   if (!(header)) {
     skip <- 0
   }
-  
+
   # planning to remove is.null from pattern if statement and defaulting a patter based on specified type; pattern remains an argument to select one file only
 
   nestedColName <- paste0("specDLS_", type)
   nestedColName <- rlang::sym(nestedColName)
 
-  file_list <- list.files(directory_path, pattern = pattern, full.names = TRUE) %>%
-    purrr::set_names()
+  file_list <- list.files(directory_path, pattern = pattern, full.names = TRUE) |> {
+    \(l) rlang::set_names(l,
+      nm = purrr::map_chr(
+        l,
+        stringr::str_extract, "\\d{6}(?!/).*$"
+      )
+    )
+  }()
 
   sheet_list <- file_list %>%
     purrr::map(readxl::excel_sheets) %>%
@@ -208,24 +220,29 @@ import_DLSspec <- function(directory_path, pattern = NULL, type = NA, header = T
             xval <- grep(pattern = "Hydrodynamic.Diameter..nm.|Time..s.", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE)
             yval <- grep(pattern = "Amp", names(df), ignore.case = TRUE, perl = TRUE, value = TRUE)
             xnew <- "x"
-            if (grepl(pattern = "Hydro", names(df), ignore.case = TRUE, perl = TRUE)) {xnew <- "hydroDia_x"}
-            if (grepl(pattern = "Time", names(df), ignore.case = TRUE, perl = TRUE)) {xnew <- "timeSec_x"}
+            if (grepl(pattern = "Hydro", names(df), ignore.case = TRUE, perl = TRUE)) {
+              xnew <- "hydroDia_x"
+            }
+            if (grepl(pattern = "Time", names(df), ignore.case = TRUE, perl = TRUE)) {
+              xnew <- "timeSec_x"
+            }
             xsym <- rlang::sym(xnew)
             if ((any(names(df) == "Hydrodynamic.Diameter..nm.") | any(names(df) == "Time..s.")) & any(names(df) == "Amplitude")) {
-              df_modified <- df %>% 
-                dplyr::select(c(xval, yval)) %>% 
+              df_modified <- df %>%
+                dplyr::select(c(xval, yval)) %>%
                 dplyr::rename(!!xsym := xval, amp_y = Amplitude)
             } else {
-              df_modified <- df %>% 
-                dplyr::select(c(1:2)) %>% 
+              df_modified <- df %>%
+                dplyr::select(c(1:2)) %>%
                 dplyr::rename(!!xsym := 1, amp_y = 2)
               message("DLS was performed at multiple temperatures. The first temperature data will be used.")
             }
-            output <- df_modified %>% 
-              {suppressMessages(tidyr::nest(., !!nestedColName := c(!!xsym, amp_y)))}
-            
+            output <- df_modified %>% {
+              suppressMessages(tidyr::nest(., !!nestedColName := c(!!xsym, amp_y)))
+            }
+
             return(output)
-          }) %>% 
+          }) %>%
           dplyr::select(!!nestedColName),
         .id = "uni"
       )
@@ -238,8 +255,8 @@ import_DLSspec <- function(directory_path, pattern = NULL, type = NA, header = T
         dplyr::mutate(
           origin = dplyr::if_else(
             stringr::str_detect(.$origin, stringr::regex("\\.uni.*$")),
-            stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.uni)", ignore_case = TRUE)),
-            stringr::str_extract(.$origin, stringr::regex("(?<=//).*(?=\\.(xls|xlsx))", ignore_case = TRUE))
+            stringr::str_extract(.$origin, stringr::regex(".*(?=\\.uni)", ignore_case = TRUE)),
+            stringr::str_extract(.$origin, stringr::regex(".*(?=\\.(xls|xlsx))", ignore_case = TRUE))
           )
         ) %>%
         tidyr::separate(origin, c("date", "instrument", "protein", "plate", "file"), sep = "-")
