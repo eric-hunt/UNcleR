@@ -12,6 +12,15 @@
 Labs *UNcle* instrument for downstream processing of biologics stability
 data.
 
+The `consolidate_experiments` function utilizes the core functions
+listed below to import UNcle data exports into a succinct and readily
+accessible data structure based on the hierarchical structure of the
+directories in which the data is stored. Experimental data for a single
+run from nanoDSF, SLS, and DLS summary and spectra files are organized
+into a unified dataframe and nested within a named list returned by the
+function according to which experiment (i.e. plate or screen) they
+belong to.
+
 Core functions for summary and “bundle export” files:
 
 -   `import_staticBundle` imports nanoDSF and SLS spectra bundle
@@ -44,13 +53,19 @@ install.packages("UNcleR")
 ```
 -->
 
-You can install the development version from
+You can install the most stable version from
 [GitHub](https://github.com/) with:
 
 ``` r
 if (!require(devtools)) install.packages("devtools")
-library(devtools)
-devtools::install_github("eric-hunt/UNcleR")
+devtools::install_github("eric-hunt/UNcleR@main")
+```
+
+..or the development version with:
+
+``` r
+if (!require(devtools)) install.packages("devtools")
+devtools::install_github("eric-hunt/UNcleR@dev")
 ```
 
 <!--
