@@ -55,7 +55,7 @@ library(rlang)
 
 # user packages
 # library(fragr)
-library(UNcleR)
+# library(UNcleR)
 # library(RTtools)
 
 # default style for ggplot
@@ -165,7 +165,7 @@ SLSbundles
 ### Dynamic Method Spectra
 
 ```{r, message=FALSE}
-DLSpath <- "ln/local/T4 RNA Ligase/Exports/General Screen/210607-01-T4 RNA Ligase-Gen006L-DLS Bundle.xlsx"
+DLSpath <- "ln/local/Bst2Pol/Exports/General Screen/210615-01-Bst Pol-Gen006R-DLS Bundle.uni-2021-06-17T10-27-43.xlsx"
 
 DLSbundle_sheets <- readxl::excel_sheets(DLSpath) |> {
   \(x) x[x != "Sheet1"]
@@ -215,8 +215,10 @@ DLStable <- reduce(list(df_c, df_i, df_m), dplyr::left_join, by = "uni")
 ```{r}
 DLStable |>
 tidyr::separate(uni, into = c("uni", "temp_C"), sep = "-", convert = TRUE) |>
+  dplyr::group_by(uni) |> 
 dplyr::filter(temp_C == min(temp_C)) |>
 dplyr::select(-temp_C) |>
+  dplyr::ungroup() |> 
 dplyr::mutate(dplyr::across(
   tidyselect::any_of(c("specDLS_I", "specDLS_M")),
   \(lcol) purrr::map(lcol, function(df) {
@@ -228,9 +230,9 @@ dplyr::mutate(dplyr::across(
   \(lcol) purrr::map(lcol, function(df) {
     dplyr::rename_with(df, .cols = c(1, 2), .fn = ~ c("time_x", "amp_y"))
   })
-)) |> {
-  \(df) df[["specDLS_C"]][[1]]
-}()
+))# |> {
+#   \(df) df[["specDLS_C"]][[1]]
+# }()
 ```
 
 
@@ -283,8 +285,10 @@ import_dynamicBundle_test <- function(path) {
     by = "uni"
   ) |>
   tidyr::separate(uni, into = c("uni", "temp_C"), sep = "-", convert = TRUE) |>
+    dplyr::group_by(uni) |> 
   dplyr::filter(temp_C == min(temp_C)) |>
   dplyr::select(-temp_C) |>
+    dplyr::ungroup() |> 
   dplyr::mutate(dplyr::across(
     tidyselect::any_of(c("specDLS_I", "specDLS_M")),
     \(lcol) purrr::map(lcol, function(df) {
@@ -301,6 +305,14 @@ import_dynamicBundle_test <- function(path) {
 
   return(table)
 }
+```
+
+```{r}
+test <- import_dynamicBundle_test("ln/local/Bst2Pol/Exports/General Screen/210615-01-Bst Pol-Gen006R-DLS Bundle.uni-2021-06-17T10-27-43.xlsx")
+```
+
+```{r}
+test
 ```
 
 ```{r}

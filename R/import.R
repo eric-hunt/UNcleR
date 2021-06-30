@@ -179,8 +179,10 @@ import_dynamicBundle <- function(directory_path, pattern = "DLS Bundle", skip = 
     ) |>
     # select for DLS experiments performed at beginning of temperature ramp
     tidyr::separate(uni, into = c("uni", "temp_C"), sep = "-", convert = TRUE) |>
+    dplyr::group_by(uni) |> # group to prevent dropping slightly higher temperatures at beginning of ramp
     dplyr::filter(temp_C == min(temp_C)) |>
     dplyr::select(-temp_C) |>
+    dplyr::ungroup() |> # ungroup to avoid this causing problems downstream
     # this makes spectra column names compatible with UncleDashboard modules
     dplyr::mutate(dplyr::across(
       tidyselect::any_of(c("specDLS_I", "specDLS_M")),
