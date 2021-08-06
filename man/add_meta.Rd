@@ -2,14 +2,14 @@
 % Please edit documentation in R/process.R
 \name{add_meta}
 \alias{add_meta}
-\title{Join user-defined metadata from `UNcleR::get_meta` function to imported Uncle data}
+\title{Join user-defined metadata from `uncleR::get_meta` function to imported Uncle data}
 \usage{
 add_meta(data, meta)
 }
 \arguments{
 \item{data}{a dataframe to assign metadata to}
 
-\item{meta}{a named list of tibbles containing metadata for experiments imported from `UNcleR::get_meta` function
+\item{meta}{a named list of tibbles containing metadata for experiments imported from `uncleR::get_meta` function
 defaults to c("well")}
 }
 \value{

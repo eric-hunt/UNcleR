@@ -1,4 +1,4 @@
-#' Import UNcle Tm/Tagg SLS summary into R
+#' Import Uncle Tm/Tagg SLS summary into R
 #'
 #' \code{import_SLSsum}
 #'
@@ -6,7 +6,7 @@
 #' @param pattern a regex pattern for further selecing files in the directory;
 #' defaults to "SLS Sum"
 #' @param sheet character string to specify sheet if multi-sheet workbook is exported
-#' @param header if TRUE skips first 4 rows of .xlsx file to remove UNcle header; default is FALSE
+#' @param header if TRUE skips first 4 rows of .xlsx file to remove Uncle header; default is FALSE
 #' @param combine if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
 #' FALSE will return a list of dataframes; default is TRUE
 #' @return a named (with filename) list of dataframes or a single merged dataframe
@@ -129,7 +129,7 @@ import_SLSsum <- function(directory_path, pattern = "SLS Sum", sheet = NULL, hea
 
 
 
-#' Import UNcle Tagg spectra into R
+#' Import Uncle Tagg spectra into R
 #'
 #' \code{import_SLSspec}
 #'
@@ -138,7 +138,7 @@ import_SLSsum <- function(directory_path, pattern = "SLS Sum", sheet = NULL, hea
 #' defaults to SLS Spec
 #' @param lambda a number value representing wavelength for Tagg spectra, typically 266nm for small aggregates and 473nm for large aggregates;
 #' default is 266nm
-#' @param header if TRUE skips first 1 rows of .xlsx file to remove UNcle header; default is TRUE
+#' @param header if TRUE skips first 1 rows of .xlsx file to remove Uncle header; default is TRUE
 #' @param combine if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
 #' FALSE will return a list of dataframes; default is TRUE
 #' @return a named (with filename) list of dataframes or a single merged dataframe

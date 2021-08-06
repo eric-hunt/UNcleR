@@ -1,4 +1,4 @@
-#' Import static UNcle spectra (nanoDSF and SLS) into R
+#' Import static Uncle spectra (nanoDSF and SLS) into R
 #'
 #' \code{import_staticBundle}
 #'
@@ -95,7 +95,7 @@ import_staticBundle <- function(directory_path, pattern = "SLS Bundle", skip = 3
 }
 
 
-#' Import dynamic UNcle spectra (DLS) into R
+#' Import dynamic Uncle spectra (DLS) into R
 #'
 #' \code{import_dynamicBundle}
 #'

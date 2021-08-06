@@ -2,7 +2,7 @@
 % Please edit documentation in R/SLS.R
 \name{import_SLSspec}
 \alias{import_SLSspec}
-\title{Import UNcle Tagg spectra into R}
+\title{Import Uncle Tagg spectra into R}
 \usage{
 import_SLSspec(
   directory_path,
@@ -21,7 +21,7 @@ defaults to SLS Spec}
 \item{lambda}{a number value representing wavelength for Tagg spectra, typically 266nm for small aggregates and 473nm for large aggregates;
 default is 266nm}
 
-\item{header}{if TRUE skips first 1 rows of .xlsx file to remove UNcle header; default is TRUE}
+\item{header}{if TRUE skips first 1 rows of .xlsx file to remove Uncle header; default is TRUE}
 
 \item{combine}{if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
 FALSE will return a list of dataframes; default is TRUE}

@@ -1,11 +1,11 @@
-#' Import UNcle fluorescence spectra into R
+#' Import Uncle fluorescence spectra into R
 #'
 #' \code{import_FLUORspec}
 #'
 #' @param directory_path a path to a directory containing the exported .xlsx files
 #' @param pattern a regex pattern for further selecing files in the directory;
 #' defaults to "Tm Spec"
-#' @param header if TRUE skips first 3 rows of .xlsx file to remove UNcle header; default is TRUE
+#' @param header if TRUE skips first 3 rows of .xlsx file to remove Uncle header; default is TRUE
 #' @param combine if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
 #' FALSE will return a list of dataframes; default is TRUE
 #' @return a named (with filename) list of dataframes or a single merged dataframe

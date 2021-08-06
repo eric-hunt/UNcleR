@@ -2,7 +2,7 @@
 % Please edit documentation in R/DLS.R
 \name{import_DLSsum}
 \alias{import_DLSsum}
-\title{Import UNcle Tm/Tagg DLS summary into R}
+\title{Import Uncle Tm/Tagg DLS summary into R}
 \usage{
 import_DLSsum(
   directory_path,
@@ -23,7 +23,7 @@ defaults to "DLS Sum"}
 
 \item{temp_cutoff}{numeric value, excluding all DLS data obtained at temperatures above this value, default is 100 (°C)}
 
-\item{header}{if TRUE skips first 4 rows of .xlsx file to remove UNcle header, default is FALSE}
+\item{header}{if TRUE skips first 4 rows of .xlsx file to remove Uncle header, default is FALSE}
 
 \item{combine}{if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
 FALSE will return a list of dataframes; default is TRUE}

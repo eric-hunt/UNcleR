@@ -17,11 +17,11 @@ consolidate_experiments(
 where the experiment "Exports" folder is located for the protein being analyzed}
 
 \item{legacy}{a boolean value, TRUE if individual SLS/DLS spectra files were exported,
-FALSE if SLS/DLS "bunble" files were exported; default is FALSE}
+FALSE if SLS/DLS "bundle" files were exported; default is FALSE}
 
-\item{SLSheader}{sets header argument for \code{UNcleR::import_SLSsum}; defaluts to TRUE}
+\item{SLSheader}{sets header argument for \code{uncleR::import_SLSsum}; defaults to TRUE}
 
-\item{DLSheader}{sets header argument for \code{UNcleR::import_DLSsum}; defaults to FALSE}
+\item{DLSheader}{sets header argument for \code{uncleR::import_DLSsum}; defaults to FALSE}
 }
 \value{
 a named list of dataframes containing the consolidated data for each experiment

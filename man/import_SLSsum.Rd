@@ -2,7 +2,7 @@
 % Please edit documentation in R/SLS.R
 \name{import_SLSsum}
 \alias{import_SLSsum}
-\title{Import UNcle Tm/Tagg SLS summary into R}
+\title{Import Uncle Tm/Tagg SLS summary into R}
 \usage{
 import_SLSsum(
   directory_path,
@@ -20,7 +20,7 @@ defaults to "SLS Sum"}
 
 \item{sheet}{character string to specify sheet if multi-sheet workbook is exported}
 
-\item{header}{if TRUE skips first 4 rows of .xlsx file to remove UNcle header; default is FALSE}
+\item{header}{if TRUE skips first 4 rows of .xlsx file to remove Uncle header; default is FALSE}
 
 \item{combine}{if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
 FALSE will return a list of dataframes; default is TRUE}

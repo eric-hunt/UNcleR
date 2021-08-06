@@ -2,7 +2,7 @@
 % Please edit documentation in R/import.R
 \name{import_staticBundle}
 \alias{import_staticBundle}
-\title{Import static UNcle spectra (nanoDSF and SLS) into R}
+\title{Import static Uncle spectra (nanoDSF and SLS) into R}
 \usage{
 import_staticBundle(
   directory_path,

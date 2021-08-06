@@ -1,6 +1,6 @@
-Package: UNcleR
+Package: uncleR
 Title: an R package for parsing UNcle data
-Version: 0.0.0.50
+Version: 0.1
 Depends: 
     R (>= 4.1.0)
 Authors@R: 

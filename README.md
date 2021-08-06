@@ -1,19 +1,19 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# UNcleR <img src='man/figures/logo.png' align="right" height="139" />
+# uncleR <img src='man/figures/logo.png' align="right" height="139" />
 
 <!-- badges: start -->
 <!-- badges: end -->
 
 ## Overview
 
-`UNcleR` is an R package for parsing data exported from an Unchained
-Labs *UNcle* instrument for downstream processing of biologics stability
+`uncleR` is an R package for parsing data exported from an Unchained
+Labs *Uncle* instrument for downstream processing of biologics stability
 data.
 
 The `consolidate_experiments` function utilizes the core functions
-listed below to import UNcle data exports into a succinct and readily
+listed below to import Uncle data exports into a succinct and readily
 accessible data structure based on the hierarchical structure of the
 directories in which the data is stored. Experimental data for a single
 run from nanoDSF, SLS, and DLS summary and spectra files are organized
@@ -46,10 +46,10 @@ Questioning:
 ## Installation
 
 <!--
-You can install the released version of UNcleR from [CRAN](https://CRAN.R-project.org) with:
+You can install the released version of uncleR from [CRAN](https://CRAN.R-project.org) with:
 
 ``` r
-install.packages("UNcleR")
+install.packages("uncleR")
 ```
 -->
 
@@ -58,14 +58,14 @@ You can install the most stable version from
 
 ``` r
 if (!require(devtools)) install.packages("devtools")
-devtools::install_github("eric-hunt/UNcleR@main")
+devtools::install_github("eric-hunt/uncleR@main")
 ```
 
 ..or the development version with:
 
 ``` r
 if (!require(devtools)) install.packages("devtools")
-devtools::install_github("eric-hunt/UNcleR@dev")
+devtools::install_github("eric-hunt/uncleR@dev")
 ```
 
 <!--
@@ -75,7 +75,7 @@ This is a basic example which shows you how to solve a common problem:
 
 
 ```r
-## library(UNcleR)
+## library(uncleR)
 ## basic example code
 ```
 -->

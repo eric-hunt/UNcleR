@@ -2,7 +2,7 @@
 % Please edit documentation in R/FLUOR.R
 \name{import_FLUORspec}
 \alias{import_FLUORspec}
-\title{Import UNcle fluorescence spectra into R}
+\title{Import Uncle fluorescence spectra into R}
 \usage{
 import_FLUORspec(
   directory_path,
@@ -17,7 +17,7 @@ import_FLUORspec(
 \item{pattern}{a regex pattern for further selecing files in the directory;
 defaults to "Tm Spec"}
 
-\item{header}{if TRUE skips first 3 rows of .xlsx file to remove UNcle header; default is TRUE}
+\item{header}{if TRUE skips first 3 rows of .xlsx file to remove Uncle header; default is TRUE}
 
 \item{combine}{if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
 FALSE will return a list of dataframes; default is TRUE}

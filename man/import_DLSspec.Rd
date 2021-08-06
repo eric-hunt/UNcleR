@@ -2,7 +2,7 @@
 % Please edit documentation in R/DLS.R
 \name{import_DLSspec}
 \alias{import_DLSspec}
-\title{Import UNcle DLS spectra into R}
+\title{Import Uncle DLS spectra into R}
 \usage{
 import_DLSspec(
   directory_path,
@@ -20,7 +20,7 @@ defaults to NULL to force user input that discriminates intensity from mass DLS 
 
 \item{type}{a character string, "C", "I", or "M", to signify if the data is correlation function, intensity, or mass distribution DLS spectra}
 
-\item{header}{if TRUE skips first 3 rows of .xlsx file to remove UNcle header; default is TRUE}
+\item{header}{if TRUE skips first 3 rows of .xlsx file to remove Uncle header; default is TRUE}
 
 \item{combine}{if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
 FALSE will return a list of dataframes; default is TRUE}

@@ -1,4 +1,4 @@
-#' Import UNcle Tm/Tagg DLS summary into R
+#' Import Uncle Tm/Tagg DLS summary into R
 #'
 #' \code{import_DLSsum}
 #'
@@ -7,7 +7,7 @@
 #' defaults to "DLS Sum"
 #' @param sheet character string to specify sheet if multi-sheet workbook is exported
 #' @param temp_cutoff numeric value, excluding all DLS data obtained at temperatures above this value, default is 100 (°C)
-#' @param header if TRUE skips first 4 rows of .xlsx file to remove UNcle header, default is FALSE
+#' @param header if TRUE skips first 4 rows of .xlsx file to remove Uncle header, default is FALSE
 #' @param combine if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
 #' FALSE will return a list of dataframes; default is TRUE
 #' @return a named (with filename) list of dataframes or a single merged dataframe
@@ -156,7 +156,7 @@ import_DLSsum <- function(directory_path, pattern = "DLS Sum", sheet = NULL, tem
 
 
 
-#' Import UNcle DLS spectra into R
+#' Import Uncle DLS spectra into R
 #'
 #' \code{import_DLSspec}
 #'
@@ -164,7 +164,7 @@ import_DLSsum <- function(directory_path, pattern = "DLS Sum", sheet = NULL, tem
 #' @param pattern a regex pattern for further selecing files in the directory;
 #' defaults to NULL to force user input that discriminates intensity from mass DLS files
 #' @param type a character string, "C", "I", or "M", to signify if the data is correlation function, intensity, or mass distribution DLS spectra
-#' @param header if TRUE skips first 3 rows of .xlsx file to remove UNcle header; default is TRUE
+#' @param header if TRUE skips first 3 rows of .xlsx file to remove Uncle header; default is TRUE
 #' @param combine if TRUE, returns all imported data merged into one unified dataframe with an "origin" column listing the original file path,
 #' FALSE will return a list of dataframes; default is TRUE
 #' @return a named (with filename) list of dataframes or a single merged dataframe

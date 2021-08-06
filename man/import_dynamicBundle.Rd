@@ -2,7 +2,7 @@
 % Please edit documentation in R/import.R
 \name{import_dynamicBundle}
 \alias{import_dynamicBundle}
-\title{Import dynamic UNcle spectra (DLS) into R}
+\title{Import dynamic Uncle spectra (DLS) into R}
 \usage{
 import_dynamicBundle(
   directory_path,

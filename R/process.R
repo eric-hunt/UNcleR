@@ -22,9 +22,9 @@
 #' @param prot_dir a character string identical to subdirectory name of working directory
 #' where the experiment "Exports" folder is located for the protein being analyzed
 #' @param legacy a boolean value, TRUE if individual SLS/DLS spectra files were exported,
-#' FALSE if SLS/DLS "bunble" files were exported; default is FALSE
-#' @param SLSheader sets header argument for \code{UNcleR::import_SLSsum}; defaluts to TRUE
-#' @param DLSheader sets header argument for \code{UNcleR::import_DLSsum}; defaults to FALSE
+#' FALSE if SLS/DLS "bundle" files were exported; default is FALSE
+#' @param SLSheader sets header argument for \code{uncleR::import_SLSsum}; defaults to TRUE
+#' @param DLSheader sets header argument for \code{uncleR::import_DLSsum}; defaults to FALSE
 #' @return a named list of dataframes containing the consolidated data for each experiment
 #' @export
 consolidate_experiments <- function(prot_dir, join_vars = NULL, legacy = FALSE, SLSheader = TRUE, DLSheader = FALSE) {
@@ -45,21 +45,21 @@ consolidate_experiments <- function(prot_dir, join_vars = NULL, legacy = FALSE, 
   import_experiment <- function(dir, protein) {
     if (legacy) {
       importList <- list(
-        FLUORspec = UNcleR::import_FLUORspec(dir),
-        SLSsum = UNcleR::import_SLSsum(dir, header = SLSheader),
-        SLSspec266 = UNcleR::import_SLSspec(dir, lambda = 266),
-        SLSspec473 = UNcleR::import_SLSspec(dir, lambda = 473),
-        DLSsum = UNcleR::import_DLSsum(dir, header = DLSheader),
-        DLSspecC = UNcleR::import_DLSspec(dir, pattern = "DLS Spec C", type = "C"),
-        DLSspecI = UNcleR::import_DLSspec(dir, pattern = "DLS Spec I", type = "I"),
-        DLSspecM = UNcleR::import_DLSspec(dir, pattern = "DLS Spec M", type = "M")
+        FLUORspec = uncleR::import_FLUORspec(dir),
+        SLSsum = uncleR::import_SLSsum(dir, header = SLSheader),
+        SLSspec266 = uncleR::import_SLSspec(dir, lambda = 266),
+        SLSspec473 = uncleR::import_SLSspec(dir, lambda = 473),
+        DLSsum = uncleR::import_DLSsum(dir, header = DLSheader),
+        DLSspecC = uncleR::import_DLSspec(dir, pattern = "DLS Spec C", type = "C"),
+        DLSspecI = uncleR::import_DLSspec(dir, pattern = "DLS Spec I", type = "I"),
+        DLSspecM = uncleR::import_DLSspec(dir, pattern = "DLS Spec M", type = "M")
       )
     } else {
       importList <- list(
-        SLSsum = UNcleR::import_SLSsum(dir, header = SLSheader),
-        DLSsum = UNcleR::import_DLSsum(dir, header = DLSheader),
-        specStatic = UNcleR::import_staticBundle(dir),
-        specDynamic = UNcleR::import_dynamicBundle(dir)
+        SLSsum = uncleR::import_SLSsum(dir, header = SLSheader),
+        DLSsum = uncleR::import_DLSsum(dir, header = DLSheader),
+        specStatic = uncleR::import_staticBundle(dir),
+        specDynamic = uncleR::import_dynamicBundle(dir)
       )
     }
     purrr::reduce(
@@ -106,12 +106,12 @@ get_meta <- function(path) {
 
 
 
-#' Join user-defined metadata from `UNcleR::get_meta` function to imported Uncle data
+#' Join user-defined metadata from `uncleR::get_meta` function to imported Uncle data
 #'
 #' \code{add_meta}
 #'
 #' @param data a dataframe to assign metadata to
-#' @param meta a named list of tibbles containing metadata for experiments imported from `UNcleR::get_meta` function
+#' @param meta a named list of tibbles containing metadata for experiments imported from `uncleR::get_meta` function
 #' defaults to c("well")
 #' @return a dataframe with metadata added as new variables, matched according to well
 #' @export
