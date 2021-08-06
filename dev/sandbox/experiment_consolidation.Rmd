@@ -1,0 +1,156 @@
+---
+title: "UNcleR Experiment Consolidation Sandbox"
+output: github_document
+knit: (function(input_file, ...) {
+    rmarkdown::render(
+      input=input_file,
+      encoding="UTF-8",
+      output_file = 'README.md'
+    )
+  })
+---
+
+```{r setup, include=FALSE}
+# set chunk defaults for suppressing console message and displaying code by default
+knitr::opts_chunk$set(
+  message = FALSE,
+  # warning = FALSE,
+  echo = TRUE,
+  include = TRUE
+)
+# set working directory for chunks and show progress bar for knitr actions
+knitr::opts_knit$set(
+  root.dir = "~/OneDrive - New England Biolabs/Documents/AppDev/Uncle Data Analysis/DataPrep/",
+  progress = TRUE
+)
+
+
+## data loading and manipulation
+# library(feather)
+library(tidyverse)
+# library(magrittr) # for the Tee pipe
+library(readxl)
+
+## statistics
+# library(rstatix)
+
+## plotting
+library(cowplot)
+# library(ggrepel)
+# library(ggridges)
+# library(gganimate)
+# library(lemon)
+library(RColorBrewer)
+library(xkcdcolors)
+library(extrafont)
+
+## programming
+library(glue)
+library(rlang)
+
+## interactivity
+# library(crosstalk)
+# library(plotly)
+
+# user packages
+# library(fragr)
+library(UNcleR)
+# library(RTtools)
+
+# default style for ggplot
+theme_set(
+  theme_bw(base_family = "Roboto Condensed") +
+    theme(
+      axis.text = element_text(face = "bold"),
+      panel.grid = element_blank()
+    )
+)
+
+
+# useful variables
+wellOrder <- purrr::map2_chr(rep(c(LETTERS[1:8]), 12), purrr::flatten_chr(purrr::map(c(1:12), rep, 8)), paste0)
+uniOrder <- purrr::map2_chr(rep(c(LETTERS[1:16]), 3), purrr::flatten_chr(purrr::map(c(1:3), rep, 16)), paste0)
+```
+
+
+## Consolidating Experimental Data
+
+A function should be developed to serve as a single tool for consolidating all experimental data based on directory hierarchy. Currently, single-use or anonymous functions are written to import Uncle data and package it for the dashboard.
+
+```{r}
+run_info <- list(
+  user = "Eric Hunt",
+  date = lubridate::today(),
+  protein_full = "Bst 2.0 Polymerase",
+  protein_abbrev = "Bst2Pol"
+)
+
+experiments <- list(
+  "General" = glue::glue("{run_info$protein_abbrev}/Exports/General Screen/"),
+  "pH" = glue::glue("{run_info$protein_abbrev}/Exports/pH Screen/")
+)
+```
+
+
+```{r}
+consolidate_experiments <- function(prot_dir, join_vars = NULL, legacy = FALSE, SLSheader = TRUE, DLSheader = FALSE) {
+  if (!(dir.exists(prot_dir))) {
+    stop("The provided protein directory does not exist.")
+  }
+  if (!(dir.exists(paste0(prot_dir, "/", "Exports")))) {
+    stop("There is no 'Exports' subdirectory. Where are the export files?")
+  }
+
+  if (is.null(join_vars)) {
+    join_vars <- c("date", "instrument", "protein", "plate", "uni")
+  }
+
+  dirList <- list.dirs(paste0(prot_dir, "/Exports/"), full.names = TRUE, recursive = FALSE) |>
+  rlang::set_names(nm = list.dirs(paste0(prot_dir, "/Exports/"), full.names = FALSE, recursive = FALSE))
+
+  import_experiment <- function(dir, protein) {
+    if (legacy) {
+      importList <- list(
+        FLUORspec = UNcleR::import_FLUORspec(dir),
+        SLSsum = UNcleR::import_SLSsum(dir, header = SLSheader),
+        SLSspec266 = UNcleR::import_SLSspec(dir, lambda = 266),
+        SLSspec473 = UNcleR::import_SLSspec(dir, lambda = 473),
+        DLSsum = UNcleR::import_DLSsum(dir, header = DLSheader),
+        DLSspecC = UNcleR::import_DLSspec(dir, pattern = "DLS Spec C", type = "C"),
+        DLSspecI = UNcleR::import_DLSspec(dir, pattern = "DLS Spec I", type = "I"),
+        DLSspecM = UNcleR::import_DLSspec(dir, pattern = "DLS Spec M", type = "M")
+      )
+    } else {
+      importList <- list(
+        SLSsum = UNcleR::import_SLSsum(dir, header = SLSheader),
+        DLSsum = UNcleR::import_DLSsum(dir, header = DLSheader),
+        specStatic = UNcleR::import_staticBundle(dir),
+        specDynamic = UNcleR::import_dynamicBundle(dir)
+      )
+    }
+    purrr::reduce(
+      importList,
+      dplyr::full_join,
+      by = join_vars
+    ) |>
+    dplyr::select(-tidyselect::contains("sample"), -tidyselect::contains("file")) |> {
+      \(df) dplyr::mutate(
+        df,
+        plate = stringr::str_trim(df$plate, side = "both"),
+        protein = protein
+      )
+    }()
+  }
+
+  consolidated <- purrr::map(
+    dirList,
+    \(dir) import_experiment(dir, prot_dir)
+  ) # |> rlang::set_names(nm = names(expList))
+
+  return(consolidated)
+}
+```
+
+```{r}
+test <- consolidate_experiments("Bst2Pol")
+```
